@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -47,7 +47,15 @@ async def health() -> dict:
 
 
 @app.post("/notify")
-async def notify(payload: NotifyRequest) -> dict:
+@app.post("/ozpay/notify")
+async def notify(request: Request, payload: NotifyRequest | None = None) -> dict:
+    if payload is None:
+        device_name = request.query_params.get("device_name")
+        text = request.query_params.get("text") or request.query_params.get("message")
+        if not device_name:
+            raise HTTPException(status_code=400, detail="Параметр device_name обязателен")
+        payload = NotifyRequest(device_name=device_name, text=text)
+
     device_name = payload.device_name.strip()
     chat_id = DEVICE_CHAT_MAP.get(device_name)
 
@@ -64,13 +72,14 @@ async def notify(payload: NotifyRequest) -> dict:
         text=f"<b>📱 {device_name}</b>\n\n{text}",
     )
 
+    print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {text}")
+
     return {
         "status": "ok",
         "device_name": device_name,
         "chat_id": chat_id,
         "message": text,
     }
-
 
 if __name__ == "__main__":
     import uvicorn

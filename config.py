@@ -9,6 +9,6 @@ SSL_KEYFILE = "/etc/letsencrypt/live/api.ozpay.ru/privkey.pem"
 # карта: имя устройства -> chat_id в Telegram
 # например: {"redroid-1": 123456789, "alpha-device": -1001234567890}
 DEVICE_CHAT_MAP = {
-    "device1": 123456789,
-    "redroid": 123456789,
+    "device1": -1004390313046,
+    "redroid": -1004390313046,
 }
