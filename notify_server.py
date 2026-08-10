@@ -48,37 +48,57 @@ async def health() -> dict:
 
 @app.post("/notify")
 @app.post("/ozpay/notify")
-async def notify(request: Request, payload: NotifyRequest | None = None) -> dict:
-    if payload is None:
-        device_name = request.query_params.get("device_name")
-        text = request.query_params.get("text") or request.query_params.get("message")
-        if not device_name:
-            raise HTTPException(status_code=400, detail="Параметр device_name обязателен")
+async def notify(request: Request) -> dict:
+    body_data = {}
+    try:
+        if request.headers.get("content-type", "").startswith("application/json"):
+            body_data = await request.json()
+    except Exception:
+        body_data = {}
+
+    device_name = (
+        (body_data.get("device_name") or request.query_params.get("device_name") or "").strip()
+    )
+    text = (
+        body_data.get("text")
+        or body_data.get("message")
+        or request.query_params.get("text")
+        or request.query_params.get("message")
+        or ""
+    ).strip()
+
+    if not device_name:
+        raise HTTPException(status_code=400, detail="Параметр device_name обязателен")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Нужно передать text или message")
+
+    try:
         payload = NotifyRequest(device_name=device_name, text=text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    device_name = payload.device_name.strip()
     chat_id = DEVICE_CHAT_MAP.get(device_name)
-
     if chat_id is None:
         raise HTTPException(status_code=404, detail=f"Устройство '{device_name}' не найдено в карте отправки")
 
     try:
-        text = payload.notification_text
+        message_text = payload.notification_text
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await bot.send_message(
         chat_id=chat_id,
-        text=f"<b>📱 {device_name}</b>\n\n{text}",
+        text=f"<b>📱 {device_name}</b>\n\n{message_text}",
     )
 
-    print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {text}")
+    print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {message_text}")
 
     return {
         "status": "ok",
         "device_name": device_name,
         "chat_id": chat_id,
-        "message": text,
+        "message": message_text,
     }
 
 if __name__ == "__main__":
