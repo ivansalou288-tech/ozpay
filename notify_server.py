@@ -150,7 +150,7 @@ if __name__ == "__main__":
     uvicorn_kwargs = {
         "host": "0.0.0.0",
         "port": 3000,
-        "reload": True,
+        "reload": False,
     }
 
     if SSL_CERTFILE and SSL_KEYFILE:
