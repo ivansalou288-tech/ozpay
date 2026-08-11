@@ -6,8 +6,47 @@ from pydantic import BaseModel, Field
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 from config import BOT_TOKEN, DEVICE_CHAT_MAP, SSL_CERTFILE, SSL_KEYFILE
+from pars import parse_message
+
+
+def format_notification_message(message: str) -> tuple[str, Optional[InlineKeyboardMarkup]]:
+    parsed = parse_message(message)
+    code = parsed.get("code")
+    amount = parsed.get("amount")
+    service = parsed.get("service")
+
+    lines = []
+    if code:
+        lines.append(f"Код: <code>{code}</code>")
+    if amount:
+        lines.append(f"Сумма: {amount} ₽")
+    if service:
+        lines.append(f"Сервис: {service}")
+
+    lines.append("")
+    lines.append("Полный текст уведомления:")
+    lines.append(message)
+
+    text = "\n".join(lines)
+
+    markup = None
+    if code:
+        markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="📋 Скопировать код",
+                        copy_text=CopyTextButton(text=code),
+                    )
+                ]
+            ]
+        )
+
+    return text, markup
+
 
 
 class NotifyRequest(BaseModel):
@@ -87,18 +126,22 @@ async def notify(request: Request) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    formatted_text, reply_markup = format_notification_message(message_text)
+
     await bot.send_message(
         chat_id=chat_id,
-        text=f"<b>📱 {device_name}</b>\n\n{message_text}",
+        text=f"<b>📱 {device_name}</b>\n\n{formatted_text}",
+        reply_markup=reply_markup,
     )
 
-    print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {message_text}")
+    print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {formatted_text}")
 
     return {
         "status": "ok",
         "device_name": device_name,
         "chat_id": chat_id,
         "message": message_text,
+        "parsed": parse_message(message_text),
     }
 
 if __name__ == "__main__":
