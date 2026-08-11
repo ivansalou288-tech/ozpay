@@ -132,7 +132,7 @@ async def notify(request: Request) -> dict:
 
     await bot.send_message(
         chat_id=chat_id,
-        text=f"<b>📱 {device_name}</b>\n\n{formatted_text}",
+        text=f"<tg-emoji emoji-id='5877318502947229960'>💻</tg-emoji> <b>{device_name}</b>\n\n{formatted_text}",
         reply_markup=reply_markup,
     )
 
