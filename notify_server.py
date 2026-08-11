@@ -20,14 +20,14 @@ def format_notification_message(message: str) -> tuple[str, Optional[InlineKeybo
 
     lines = []
     if code:
-        lines.append(f"Код: <code>{code}</code>")
+        lines.append(f"<tg-emoji emoji-id='5775887550262546277'>❗️</tg-emoji> <b>Код:</b> <code>{code}</code>")
     if amount:
-        lines.append(f"Сумма: {amount} ₽")
+        lines.append(f"<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> {amount} ₽")
     if service:
-        lines.append(f"Сервис: {service}")
+        lines.append(f"<tg-emoji emoji-id='5879585266426973039'>🌐</tg-emoji> <b>Сервис:</b> {service}")
 
     lines.append("")
-    lines.append("Полный текст уведомления:")
+    lines.append("<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>")
     lines.append(message)
 
     text = "\n".join(lines)
@@ -38,8 +38,10 @@ def format_notification_message(message: str) -> tuple[str, Optional[InlineKeybo
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="📋 Скопировать код",
+                        text="Скопировать код",
                         copy_text=CopyTextButton(text=code),
+                        icon_custom_emoji_id="5985774024968379294",
+                        style="success",
                     )
                 ]
             ]
