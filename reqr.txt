@@ -36,3 +36,4 @@ uiautomator2==3.7.0
 urllib3==2.7.0
 uvicorn==0.52.1
 yarl==1.24.5
+Flask==2.3.2
