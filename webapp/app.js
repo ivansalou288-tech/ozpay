@@ -113,6 +113,7 @@ const STATUS_LABEL = {
     online: 'Доступен',
     busy: 'В работе',
     offline: 'Офлайн',
+    new: 'Не подключён',
 };
 
 const API = 'https://api.ozpay.ru:5001/api';
@@ -383,7 +384,41 @@ function renderCardFull(card) {
     `;
 }
 
+const LOGIN_OFF_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a5 5 0 0 1 5 5v3"></path>
+        <path d="M7 10V7a5 5 0 0 1 .5-2.2"></path>
+        <rect x="4" y="10" width="16" height="11" rx="2.5"></rect>
+        <path d="M3 3l18 18"></path>
+    </svg>
+`;
+
+function renderNewDeviceScreen(device) {
+    return `
+        <div class="detail device--${device.status}" data-id="${device.id}">
+            <div class="detail__top">
+                <button class="icon-btn" data-action="back" aria-label="Назад">${BACK_ICON}</button>
+                <div class="detail__title-wrap">
+                    <span class="detail__name">${device.name}</span>
+                    <span class="detail__meta">
+                        <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status}
+                    </span>
+                </div>
+            </div>
+
+            <div class="login-state">
+                <div class="login-state__icon">${LOGIN_OFF_ICON}</div>
+                <p class="login-state__title">Вход в личный кабинет не выполнен</p>
+                <button class="btn btn--primary login-state__btn" data-action="login">Добавить</button>
+            </div>
+        </div>
+    `;
+}
+
 function renderDeviceScreen(device) {
+    if (device.status === 'new' || device.linked === false) {
+        return renderNewDeviceScreen(device);
+    }
     const flowTotal = (device.income || 0) + (device.outcome || 0) || 1;
     const inShare = Math.round((device.income / flowTotal) * 100);
 
@@ -631,16 +666,72 @@ document.addEventListener('click', (event) => {
 function openAddSheet() {
     haptic.impact('medium');
     openSheet(`
-        <h3 class="sheet__title">Добавить девайс</h3>
-        <p class="sheet__sub">Тестовый режим — подключение по ADB появится позже.</p>
-        <div class="sheet__grid">
-            <div class="sheet__cell"><b>ADB</b><span>по ip:port</span></div>
-            <div class="sheet__cell"><b>QR</b><span>сопряжение</span></div>
-        </div>
-        <div class="sheet__actions">
-            <button class="btn btn--primary" data-toast="Слот зарезервирован" data-haptic="medium">Занять слот</button>
-        </div>
+        <h3 class="sheet__title">Новый девайс</h3>
+        <form class="form" id="addForm" autocomplete="off">
+            <label class="field">
+                <span class="field__label">Название *</span>
+                <input class="field__input" name="name" placeholder="Например, Евгений" required>
+            </label>
+            <label class="field">
+                <span class="field__label">IP</span>
+                <input class="field__input" name="ip" placeholder="192.168.0.10" inputmode="decimal">
+            </label>
+            <label class="field">
+                <span class="field__label">Порт</span>
+                <input class="field__input" name="port" placeholder="5555" inputmode="numeric">
+            </label>
+            <div class="sheet__actions">
+                <button type="submit" class="btn btn--primary">Сохранить</button>
+                <button type="button" class="btn" data-action="cancel">Отмена</button>
+            </div>
+        </form>
     `);
+
+    const form = document.getElementById('addForm');
+    form.addEventListener('submit', onAddSubmit);
+    form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+    setTimeout(() => form.elements.name.focus(), 80);
+}
+
+async function onAddSubmit(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const name = form.elements.name.value.trim();
+    if (!name) {
+        showToast('Укажите название');
+        return;
+    }
+
+    const payload = {
+        name,
+        ip: form.elements.ip.value.trim(),
+        port: form.elements.port.value.trim(),
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Сохраняю…';
+    try {
+        const data = await api('/devices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!data.device) throw new Error('API не вернул девайс');
+        upsertDevice(normalizeDevice(data.device));
+        renderDevices();
+        haptic.notify('success');
+        closeSheet();
+        showToast('Девайс добавлен');
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось добавить');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Сохранить';
+    }
 }
 
 document.getElementById('addDeviceBtn').addEventListener('click', openAddSheet);

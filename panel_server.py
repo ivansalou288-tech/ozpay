@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
-from db_api import get_device, list_devices
+from db_api import create_device, get_device, list_devices
 from main import check_balance, check_cards, check_turnover, full_check
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
@@ -115,8 +115,11 @@ def serialize_device(row: dict) -> dict:
     device_id = row.get("device") or ""
     ip = row.get("ip")
     port = row.get("port")
+    linked = bool(row.get("number"))
     if device_id in _checking:
         status = "busy"
+    elif not linked:
+        status = "new"
     elif ip and port:
         status = "online"
     else:
@@ -127,12 +130,21 @@ def serialize_device(row: dict) -> dict:
         "name": row.get("name") or device_id,
         "number": row.get("number") or "",
         "status": status,
+        "linked": linked,
         "checking": device_id in _checking,
         "balance": _to_number(row.get("balance")),
         "income": _to_number(row.get("income")),
         "outcome": _to_number(row.get("outcome")),
         "cards": parse_cards(row.get("cards")),
     }
+
+
+def _next_device_id() -> str:
+    existing = {row.get("device") for row in list_devices()}
+    index = 1
+    while f"device{index}" in existing:
+        index += 1
+    return f"device{index}"
 
 
 def _require_device(device_id: str) -> dict:
@@ -179,6 +191,32 @@ async def api_list_devices() -> dict:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Ошибка БД: {exc}") from exc
     return {"devices": [serialize_device(row) for row in rows]}
+
+
+@api.post("/devices")
+async def api_create_device(request: Request) -> dict:
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Укажите название")
+
+    ip = (str(body.get("ip") or "")).strip() or None
+
+    port_raw = body.get("port")
+    port = None
+    if port_raw not in (None, ""):
+        try:
+            port = int(str(port_raw).strip())
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Порт должен быть числом")
+
+    device_id = _next_device_id()
+    try:
+        create_device(device_id, name=name, ip=ip, port=port)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Не удалось создать девайс: {exc}") from exc
+
+    return {"device": serialize_device(_require_device(device_id))}
 
 
 @api.get("/devices/{device_id}")
