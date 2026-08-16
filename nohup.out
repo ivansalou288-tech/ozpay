@@ -1,0 +1,679 @@
+/var/www/api.ozpay.ru/ozpay/notify_server.py:34: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+/var/www/api.ozpay.ru/ozpay/notify_server.py:39: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")
+INFO:     Will watch for changes in these directories: ['/var/www/api.ozpay.ru/ozpay']
+INFO:     Uvicorn running on https://0.0.0.0:3000 (Press CTRL+C to quit)
+INFO:     Started reloader process [61564] using StatReload
+INFO:     Started server process [61807]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     5.226.140.38:15552 - "GET / HTTP/1.1" 404 Not Found
+INFO:     31.14.254.37:12682 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     31.14.254.59:4454 - "GET /api/mcp HTTP/1.1" 404 Not Found
+INFO:     81.19.219.204:12210 - "GET / HTTP/1.1" 404 Not Found
+INFO:     5.226.140.19:7488 - "GET /mcp/ HTTP/1.1" 404 Not Found
+INFO:     188.240.59.2:7798 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     31.14.254.54:12032 - "GET /sse HTTP/1.1" 404 Not Found
+Received SIGTERM signal
+Notification sent to device 'device1' (chat_id: -1004390313046): 57551 – код оплаты в FUNPAY на 45.92 ₽. Ozon Банк/Ozon Банк
+INFO:     72.56.153.110:7867 - "POST /ozpay/notify?text=57551%20%E2%80%93%20%D0%BA%D0%BE%D0%B4%20%D0%BE%D0%BF%D0%BB%D0%B0%D1%82%D1%8B%20%D0%B2%20FUNPAY%20%D0%BD%D0%B0%2045.92%20%E2%82%BD.%20Ozon%20%D0%91%D0%B0%D0%BD%D0%BA%2FOzon%20%D0%91%D0%B0%D0%BD%D0%BA&device_name=device1 HTTP/1.1" 200 OK
+/var/www/api.ozpay.ru/ozpay/notify_server.py:75: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+/var/www/api.ozpay.ru/ozpay/notify_server.py:80: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("shutdown")
+INFO:     Started server process [47129]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on https://0.0.0.0:3000 (Press CTRL+C to quit)
+Notification sent to device 'device1' (chat_id: -1004390313046): <tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> 50 ₽
+
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+Возвращайте 2% баллами за покупки от 50 ₽/Баллы за покупки 💎
+INFO:     72.56.153.110:18708 - "POST /ozpay/notify?text=%D0%92%D0%BE%D0%B7%D0%B2%D1%80%D0%B0%D1%89%D0%B0%D0%B9%D1%82%D0%B5%202%25%20%D0%B1%D0%B0%D0%BB%D0%BB%D0%B0%D0%BC%D0%B8%20%D0%B7%D0%B0%20%D0%BF%D0%BE%D0%BA%D1%83%D0%BF%D0%BA%D0%B8%20%D0%BE%D1%82%2050%20%E2%82%BD%2F%D0%91%D0%B0%D0%BB%D0%BB%D1%8B%20%D0%B7%D0%B0%20%D0%BF%D0%BE%D0%BA%D1%83%D0%BF%D0%BA%D0%B8%20%F0%9F%92%8E&device_name=device1 HTTP/1.1" 200 OK
+INFO:     79.127.175.107:51378 - "GET / HTTP/1.1" 404 Not Found
+INFO:     79.127.175.107:51378 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     146.70.65.13:51788 - "GET / HTTP/1.1" 404 Not Found
+INFO:     146.70.65.13:51788 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     146.70.65.13:57102 - "GET / HTTP/1.1" 404 Not Found
+INFO:     146.70.65.13:57102 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:50750 - "GET / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:50902 - "GET / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:50918 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     167.94.146.52:44204 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:44220 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:44232 - "POST / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.52:13150 - "GET /login HTTP/1.1" 404 Not Found
+Notification sent to device 'device1' (chat_id: -1004390313046): 
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+У приложения "MacroDroid" есть доступ к данным на экране, и оно может выполнять команды на устройстве. Это нужно для правильной работы специальных возможностей./Проверьте приложение с полным доступом к устройству
+INFO:     72.56.153.110:53629 - "POST /ozpay/notify?text=%D0%A3%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F%20%22MacroDroid%22%20%D0%B5%D1%81%D1%82%D1%8C%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%20%D0%BA%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%20%D0%BD%D0%B0%20%D1%8D%D0%BA%D1%80%D0%B0%D0%BD%D0%B5%2C%20%D0%B8%20%D0%BE%D0%BD%D0%BE%20%D0%BC%D0%BE%D0%B6%D0%B5%D1%82%20%D0%B2%D1%8B%D0%BF%D0%BE%D0%BB%D0%BD%D1%8F%D1%82%D1%8C%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B%20%D0%BD%D0%B0%20%D1%83%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%81%D1%82%D0%B2%D0%B5.%20%D0%AD%D1%82%D0%BE%20%D0%BD%D1%83%D0%B6%D0%BD%D0%BE%20%D0%B4%D0%BB%D1%8F%20%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D1%8C%D0%BD%D0%BE%D0%B9%20%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%8B%20%D1%81%D0%BF%D0%B5%D1%86%D0%B8%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D1%85%20%D0%B2%D0%BE%D0%B7%D0%BC%D0%BE%D0%B6%D0%BD%D0%BE%D1%81%D1%82%D0%B5%D0%B9.%2F%D0%9F%D1%80%D0%BE%D0%B2%D0%B5%D1%80%D1%8C%D1%82%D0%B5%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5%20%D1%81%20%D0%BF%D0%BE%D0%BB%D0%BD%D1%8B%D0%BC%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BE%D0%BC%20%D0%BA%20%D1%83%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%81%D1%82%D0%B2%D1%83&device_name=device1 HTTP/1.1" 200 OK
+Notification sent to device 'device1' (chat_id: -1004390313046): <tg-emoji emoji-id='5775887550262546277'>❗️</tg-emoji> <b>Код:</b> <code>76544</code>
+<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> 46.23 ₽
+<tg-emoji emoji-id='5879585266426973039'>🌐</tg-emoji> <b>Сервис:</b> FUNPAY
+
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+76544 – код оплаты в FUNPAY на 46.23 ₽. Ozon Банк/Ozon Банк
+INFO:     72.56.153.110:22279 - "POST /ozpay/notify?text=76544%20%E2%80%93%20%D0%BA%D0%BE%D0%B4%20%D0%BE%D0%BF%D0%BB%D0%B0%D1%82%D1%8B%20%D0%B2%20FUNPAY%20%D0%BD%D0%B0%2046.23%20%E2%82%BD.%20Ozon%20%D0%91%D0%B0%D0%BD%D0%BA%2FOzon%20%D0%91%D0%B0%D0%BD%D0%BA&device_name=device1 HTTP/1.1" 200 OK
+INFO:     167.94.146.49:60312 - "GET / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.49:13350 - "GET / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.49:13364 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     167.94.146.49:29210 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     167.94.146.49:29218 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     167.94.146.49:29232 - "POST / HTTP/1.1" 404 Not Found
+INFO:     167.94.146.49:29254 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+Notification sent to device 'device1' (chat_id: -1004390313046): <tg-emoji emoji-id='5775887550262546277'>❗️</tg-emoji> <b>Код:</b> <code>26459</code>
+<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> 46.25 ₽
+<tg-emoji emoji-id='5879585266426973039'>🌐</tg-emoji> <b>Сервис:</b> FUNPAY
+
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+26459 – код оплаты в FUNPAY на 46.25 ₽. Ozon Банк/Ozon Банк
+INFO:     72.56.153.110:9681 - "POST /ozpay/notify?text=26459%20%E2%80%93%20%D0%BA%D0%BE%D0%B4%20%D0%BE%D0%BF%D0%BB%D0%B0%D1%82%D1%8B%20%D0%B2%20FUNPAY%20%D0%BD%D0%B0%2046.25%20%E2%82%BD.%20Ozon%20%D0%91%D0%B0%D0%BD%D0%BA%2FOzon%20%D0%91%D0%B0%D0%BD%D0%BA&device_name=device1 HTTP/1.1" 200 OK
+INFO:     66.132.172.218:44828 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.218:49070 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.218:49072 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.172.218:5264 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     66.132.172.218:5302 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     66.132.172.218:5310 - "POST / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.218:36496 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+INFO:     91.231.89.38:41821 - "GET / HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:39660 - "GET / HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:49406 - "GET / HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:49422 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     199.45.154.116:45994 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:46008 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:46018 - "POST / HTTP/1.1" 404 Not Found
+INFO:     199.45.154.116:53394 - "GET /.well-known/security.txt HTTP/1.1" 404 Not Found
+WARNING:  Invalid HTTP request received.
+WARNING:  Invalid HTTP request received.
+INFO:     104.152.52.201:55703 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.26:42404 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.12:40668 - "GET / HTTP/1.1" 404 Not Found
+INFO:     18.218.118.203:34980 - "GET / HTTP/1.1" 404 Not Found
+INFO:     31.14.254.80:15618 - "GET / HTTP/1.1" 404 Not Found
+INFO:     81.19.219.226:6078 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     31.14.254.80:15628 - "GET / HTTP/1.1" 404 Not Found
+INFO:     188.240.59.33:1522 - "GET /api/mcp HTTP/1.1" 404 Not Found
+INFO:     81.19.219.246:16378 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     5.226.140.81:10476 - "GET /mcp/ HTTP/1.1" 404 Not Found
+INFO:     185.216.145.180:1784 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     64.62.156.182:64800 - "GET / HTTP/1.1" 404 Not Found
+INFO:     64.62.156.182:27909 - "GET / HTTP/1.1" 404 Not Found
+INFO:     64.62.156.182:14095 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     3.129.187.38:12718 - "GET / HTTP/1.1" 404 Not Found
+Notification sent to device 'device1' (chat_id: -1004390313046): 
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+Начисляем баллы за покупки в этих играх/Играете? Получайте баллы 💎
+INFO:     72.56.153.110:25505 - "POST /ozpay/notify?text=%D0%9D%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D1%8F%D0%B5%D0%BC%20%D0%B1%D0%B0%D0%BB%D0%BB%D1%8B%20%D0%B7%D0%B0%20%D0%BF%D0%BE%D0%BA%D1%83%D0%BF%D0%BA%D0%B8%20%D0%B2%20%D1%8D%D1%82%D0%B8%D1%85%20%D0%B8%D0%B3%D1%80%D0%B0%D1%85%2F%D0%98%D0%B3%D1%80%D0%B0%D0%B5%D1%82%D0%B5%3F%20%D0%9F%D0%BE%D0%BB%D1%83%D1%87%D0%B0%D0%B9%D1%82%D0%B5%20%D0%B1%D0%B0%D0%BB%D0%BB%D1%8B%20%F0%9F%92%8E&device_name=device1 HTTP/1.1" 200 OK
+INFO:     66.132.172.47:21378 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.47:38284 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.47:38298 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.172.47:52444 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     66.132.172.47:52458 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     66.132.172.47:52464 - "POST / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.47:24338 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+Failed to fetch updates - TelegramServerError: Telegram server says - Bad Gateway
+Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8752208475)
+Failed to fetch updates - TelegramServerError: Telegram server says - Bad Gateway
+Sleep for 1.288880 seconds and try again... (tryings = 1, bot id = 8752208475)
+Failed to fetch updates - TelegramServerError: Telegram server says - Bad Gateway
+Sleep for 1.583392 seconds and try again... (tryings = 2, bot id = 8752208475)
+Failed to fetch updates - TelegramServerError: Telegram server says - Bad Gateway
+Sleep for 2.060657 seconds and try again... (tryings = 3, bot id = 8752208475)
+Failed to fetch updates - TelegramServerError: Telegram server says - Bad Gateway
+Sleep for 2.733405 seconds and try again... (tryings = 4, bot id = 8752208475)
+INFO:     213.209.159.175:30003 - "GET / HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.local HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.production HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.development HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.dev HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.staging HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.test HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.example HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.backup HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.envrc HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.aws/config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.aws/credentials HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.js HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.ini HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /configuration.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /configuration.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /configuration.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /settings.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /settings.py HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /settings.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /settings.ini HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /application.properties HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /application.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /application.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /secrets.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /secrets.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /secrets.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /credentials.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /credentials.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /credentials.ini HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /database.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /database.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /database.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /database.config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /app.config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /web.config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env~ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.bak HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.old HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.save HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.orig HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.dist HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php~ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.bak HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.old HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.save HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.orig HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.swp HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php.swo HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.git/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.git/config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.git/HEAD HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.git/index HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.git/logs/HEAD HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.svn/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.svn/entries HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.svn/wc.db HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.hg/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.hg/store/data/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.bzr/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /CVS/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.gitignore HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.gitattributes HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.gitlab-ci.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.github/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /error.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /access.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /debug.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /laravel.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /app.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /storage/logs/laravel.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /php_error.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /php_errors.log HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /logs/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /log/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /tmp/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /temp/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //admin HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //administrator HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //adminpanel HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //admin/login HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //admin.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //api/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //api/v1/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //api/v2/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //api/docs HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //swagger HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //swagger-ui.html HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //openapi.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //graphql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //graphiql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //actuator HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //actuator/env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //actuator/configprops HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //actuator/heapdump HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //phpinfo.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //info.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //phpmyadmin HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //pma HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //debug HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //console HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //_debug HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //server-status HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /docker-compose.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /docker-compose.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.dockerignore HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /kubernetes/secrets.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /k8s/secrets.yaml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /terraform.tfstate HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /terraform.tfstate.backup HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /ansible.cfg HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /group_vars/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /host_vars/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.kube/config HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /package.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /package-lock.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /yarn.lock HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /composer.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /composer.lock HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /requirements.txt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Pipfile HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Pipfile.lock HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Gemfile HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Gemfile.lock HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /pom.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /build.gradle HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /global.asax HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /global.asa HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /id_rsa HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /id_rsa.pub HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /id_dsa HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /id_ecdsa HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /id_ed25519 HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /private.key HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /server.key HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /ssl.key HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /cert.pem HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /server.crt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /fullchain.pem HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.htpasswd HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.htaccess HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /htpasswd.txt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /authorized_keys HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /known_hosts HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.idea/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.vscode/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.vs/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sftp-config.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /FileZilla.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /winscp.ini HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.ftpconfig HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.remote-sync.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /nbproject/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /google-services.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /AndroidManifest.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Info.plist HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /firebase.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.firebaserc HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /security.txt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.well-known/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /crossdomain.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /clientaccesspolicy.xml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /README.md HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /INSTALL.md HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /CHANGELOG.md HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /license.txt HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /LICENSE HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /test/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /tests/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /dev/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /staging/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /old/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /beta/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /demo/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //login HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //signin HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //register HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //forgot-password HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //wp-admin HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //wp-login.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //wp-config.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //adminer.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //myadmin/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET //mysql/ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /index.php~ HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /index.php.bak HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /index.php.old HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /dump.sql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /database.sql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /db.sql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /mysql.sql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /backup.sql HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.DS_Store HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /Thumbs.db HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /wp-config.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /terraform.tfvars HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /ansible/vault.yml HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /test_smtp.py HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /readme.md HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /docs/setup.md HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.vscode/settings.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /appsettings.json HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.sample.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.local.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.production.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.dev.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /twilio/.env.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config/.env.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sendgrid/.env.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.php.bak HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.php-bak HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.php-backup HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.php.backup HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /test/.env.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.example.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /app_dev.php/_profiler/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /var/.env.local.php HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /api/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /app/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /admin/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /backend/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /core/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /laravel/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.prod HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /public/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /local/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /config/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /old/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /apps/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /new/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /vendor/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /web/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /dev/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /wp-content/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /crm/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /www/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /library/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.stage HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /src/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /application/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /prod/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /staging/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.production.local HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env_sample HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /wp-admin/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /conf/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.development.local HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /production/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /server/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.live HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /app/config/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /docker/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /development/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.dev.local HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.docker/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env_1 HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /portal/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /shared/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /shop/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sendgrid.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /site/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /test/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /protected/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /cms/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sendgrid/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /demo/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.www HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.sample HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /private/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /dashboard/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /audio/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /blog/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /backup/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /frontend/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /.env.testing HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /client/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /cgi-bin/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /project/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /base/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /back/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /system/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /mail/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /sites/all/libraries/mailchimp/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /build/.env HTTP/1.1" 404 Not Found
+INFO:     213.209.159.175:30003 - "GET /cron/.env HTTP/1.1" 404 Not Found
+INFO:     85.217.149.58:47886 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.11:57900 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.134:8650 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.225:2872 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     69.5.169.163:4122 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     69.5.169.248:13606 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.142:3966 - "GET /mcp/ HTTP/1.1" 404 Not Found
+INFO:     69.5.169.218:15944 - "GET /api/mcp HTTP/1.1" 404 Not Found
+INFO:     69.5.169.158:9492 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     3.130.168.2:29414 - "GET / HTTP/1.1" 404 Not Found
+INFO:     162.216.149.214:64994 - "GET / HTTP/1.1" 404 Not Found
+INFO:     35.203.211.23:65224 - "GET /metrics HTTP/1.1" 404 Not Found
+INFO:     18.218.118.203:45938 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.109:6300 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.109:6302 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.172.109:2458 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     66.132.172.109:2482 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     66.132.172.109:4728 - "POST / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.109:63880 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     35.203.211.197:64380 - "GET /v1/metadata HTTP/1.1" 404 Not Found
+INFO:     44.220.188.197:45708 - "GET / HTTP/1.1" 404 Not Found
+INFO:     44.220.188.197:45830 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.212:15050 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.214:42843 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.217:30879 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:39148 - "GET / HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:47954 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:47958 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:47974 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:48082 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:48090 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:48102 - "GET /mcp-sse HTTP/1.1" 404 Not Found
+INFO:     152.32.140.12:48630 - "GET /get_server_info HTTP/1.1" 404 Not Found
+INFO:     213.166.84.51:7070 - "GET / HTTP/1.1" 404 Not Found
+INFO:     81.19.219.232:2568 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     188.240.59.58:3136 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     195.206.182.213:3576 - "GET /mcp/ HTTP/1.1" 404 Not Found
+INFO:     31.14.254.121:11564 - "GET / HTTP/1.1" 404 Not Found
+INFO:     195.140.214.24:3666 - "GET /api/mcp HTTP/1.1" 404 Not Found
+INFO:     188.240.59.34:14114 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     104.152.52.145:51051 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.48:59912 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.7:37008 - "GET / HTTP/1.1" 404 Not Found
+INFO:     203.55.131.4:59848 - "GET / HTTP/1.1" 404 Not Found
+INFO:     203.55.131.4:52586 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+Notification sent to device 'device1' (chat_id: -1004390313046): <tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> 10 ₽
+<tg-emoji emoji-id='5879585266426973039'>🌐</tg-emoji> <b>Сервис:</b> Ozon Банк
+
+<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>
+Пополнение на 10 ₽. Максим Анатольевич М. Доступно 10 ₽/Ozon Банк
+INFO:     72.56.153.110:23599 - "POST /ozpay/notify?text=%D0%9F%D0%BE%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%BD%D0%B0%2010%20%E2%82%BD.%20%D0%9C%D0%B0%D0%BA%D1%81%D0%B8%D0%BC%20%D0%90%D0%BD%D0%B0%D1%82%D0%BE%D0%BB%D1%8C%D0%B5%D0%B2%D0%B8%D1%87%20%D0%9C.%20%D0%94%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE%2010%20%E2%82%BD%2FOzon%20%D0%91%D0%B0%D0%BD%D0%BA&device_name=device1 HTTP/1.1" 200 OK
+INFO:     45.156.128.77:27882 - "GET / HTTP/1.1" 404 Not Found
+INFO:     45.156.128.76:26092 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     45.156.128.76:26092 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     45.156.128.78:27816 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     18.218.118.203:30418 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.199:22132 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.199:58170 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     66.132.172.199:10450 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     66.132.172.199:26940 - "POST / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.199:61552 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     185.242.226.18:46364 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.38:42604 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.48:27097 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.41:39765 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     85.217.149.55:44840 - "GET / HTTP/1.1" 404 Not Found
+INFO:     91.230.168.62:57689 - "GET / HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:48970 - "GET / HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36112 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36120 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36124 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36196 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36210 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36222 - "GET /mcp-sse HTTP/1.1" 404 Not Found
+INFO:     165.154.129.188:36238 - "GET /get_server_info HTTP/1.1" 404 Not Found
+INFO:     18.116.101.220:27848 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.186:13534 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.165:5814 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     69.5.169.183:1666 - "GET /mcp/ HTTP/1.1" 404 Not Found
+INFO:     69.5.169.130:5176 - "GET /api/mcp HTTP/1.1" 404 Not Found
+INFO:     69.5.169.233:15838 - "GET / HTTP/1.1" 404 Not Found
+INFO:     69.5.169.225:6346 - "GET /mcp HTTP/1.1" 404 Not Found
+INFO:     69.5.169.140:9532 - "GET /sse HTTP/1.1" 404 Not Found
+INFO:     156.225.1.97:57000 - "GET / HTTP/1.1" 404 Not Found
+INFO:     156.225.1.97:58210 - "GET / HTTP/1.1" 404 Not Found
+INFO:     156.225.1.97:58280 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     162.216.149.156:65038 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.195:58064 - "GET / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.195:57694 - "PRI %2A HTTP/2.0" 404 Not Found
+WARNING:  Invalid HTTP request received.
+INFO:     66.132.172.195:53080 - "POST /mcp HTTP/1.1" 404 Not Found
+INFO:     66.132.172.195:53088 - "POST /jsonrpc HTTP/1.1" 404 Not Found
+INFO:     66.132.172.195:50286 - "POST / HTTP/1.1" 404 Not Found
+INFO:     66.132.172.195:50290 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     193.46.255.152:35556 - "GET / HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET / HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /api/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /backend/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /phpinfo.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /admin/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /phpinfo/ HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /laravel/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /core/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /test HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.example HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /app/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /dev/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /?phpinfo=-1 HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /server/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.save HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /info/ HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /staging/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /WEB-INF/web.xml HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.production HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.gitlab-ci.yml HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /deploy.sh HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /source/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /framework/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /ikiwiki/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config.inc.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /system/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /wp-config.php.backup HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /test/ HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.dev HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.sample HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /app_dev.php/_profiler/open?file=app/config/parameters.yml HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /wp-content/mysql.sql HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.dev.local HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /php-info.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.prod HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.stage HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /info.php.bak HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /phpinfo.php.bak HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.aws/credentials HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /info.txt HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /env/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config.json HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /src/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env_copy HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config/app.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /env.example HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /web/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /phpinfo.php3 HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.bashrc HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.envrc HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.sample.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.local.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.production.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config.dev.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /twilio/.env.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config/.env.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /sendgrid/.env.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.php.bak HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.php-bak HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.php-backup HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.php.backup HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /test/.env.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.example.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /app_dev.php/_profiler/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /var/.env.local.php HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.local HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.bak HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /public/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.backup HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /local/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /config/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.old HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /old/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /apps/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /new/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /vendor/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /wp-content/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /crm/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.development HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /www/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /library/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /application/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /prod/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.test HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.dist HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.production.local HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env_sample HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /wp-admin/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /conf/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.development.local HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /production/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env~ HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.staging HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.live HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /app/config/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /docker/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /development/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.docker/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env_1 HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /portal/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /shared/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /shop/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /sendgrid.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /site/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /test/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /protected/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /cms/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /sendgrid/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /demo/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.www HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /private/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /dashboard/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /audio/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /blog/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /backup/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /frontend/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /.env.testing HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /client/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /cgi-bin/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /project/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /base/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /back/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /mail/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /sites/all/libraries/mailchimp/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /build/.env HTTP/1.1" 404 Not Found
+INFO:     80.94.95.211:54353 - "GET /cron/.env HTTP/1.1" 404 Not Found
+INFO:     104.152.52.229:40473 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.108:32656 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.117:19103 - "GET / HTTP/1.1" 404 Not Found
+INFO:     65.49.1.110:51313 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     175.6.54.21:37162 - "GET / HTTP/1.1" 404 Not Found
+INFO:     175.6.54.21:37154 - "GET / HTTP/1.1" 404 Not Found
+INFO:     85.217.149.17:46538 - "GET / HTTP/1.1" 404 Not Found
+INFO:     31.14.32.4:35576 - "GET / HTTP/1.1" 404 Not Found
