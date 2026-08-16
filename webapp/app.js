@@ -758,6 +758,35 @@ function normalizeIpInput(input) {
     if (start != null) input.setSelectionRange(start, end);
 }
 
+function groupPhoneDigits(digits) {
+    const d = digits.slice(0, 10);
+    const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)];
+    return parts.filter(Boolean).join(' ');
+}
+
+function formatPhoneInput(input) {
+    const prevValue = input.value;
+    const prevCaret = input.selectionStart != null ? input.selectionStart : prevValue.length;
+    const digitsBeforeCaret = prevValue.slice(0, prevCaret).replace(/\D/g, '').length;
+
+    let digits = prevValue.replace(/\D/g, '');
+    if (digits.length === 11 && (digits[0] === '7' || digits[0] === '8')) {
+        digits = digits.slice(1);
+    }
+    digits = digits.slice(0, 10);
+
+    const formatted = groupPhoneDigits(digits);
+    input.value = formatted;
+
+    let caret = 0;
+    let seen = 0;
+    while (caret < formatted.length && seen < digitsBeforeCaret) {
+        if (/\d/.test(formatted[caret])) seen += 1;
+        caret += 1;
+    }
+    if (input.setSelectionRange) input.setSelectionRange(caret, caret);
+}
+
 function openAddSheet() {
     haptic.impact('medium');
     openSheet(`
@@ -868,11 +897,14 @@ function startLoginFlow(deviceId) {
         <form class="form" id="loginForm" autocomplete="off">
             <label class="field">
                 <span class="field__label">Номер телефона *</span>
-                <input class="field__input" name="number" placeholder="900 000 00 00" inputmode="tel" required>
+                <div class="field__phone">
+                    <span class="field__prefix">+7</span>
+                    <input class="field__input field__input--phone" name="number" placeholder="900 000 00 00" inputmode="numeric" autocomplete="tel-national" maxlength="13" required>
+                </div>
             </label>
             <label class="field">
                 <span class="field__label">Код-пароль *</span>
-                <input class="field__input" name="password" placeholder="4 цифры" inputmode="numeric" required>
+                <input class="field__input" name="password" placeholder="4 цифры" inputmode="numeric" autocomplete="off" maxlength="8" required>
             </label>
             <div class="sheet__actions">
                 <button type="submit" class="btn btn--primary">Войти</button>
@@ -882,6 +914,10 @@ function startLoginFlow(deviceId) {
     `);
     const form = document.getElementById('loginForm');
     form.addEventListener('submit', (event) => onLoginSubmit(event, deviceId));
+    form.elements.number.addEventListener('input', () => formatPhoneInput(form.elements.number));
+    form.elements.password.addEventListener('input', () => {
+        form.elements.password.value = form.elements.password.value.replace(/\D/g, '');
+    });
     form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
         haptic.impact('light');
         closeSheet();

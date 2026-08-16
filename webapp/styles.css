@@ -1053,6 +1053,31 @@ body {
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
 }
 
+.field__phone {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.field__prefix {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid var(--stroke);
+    background: rgba(12, 8, 26, 0.6);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.field__input--phone {
+    flex: 1 1 auto;
+    letter-spacing: 1.5px;
+}
+
 .form .sheet__actions {
     margin-top: 6px;
 }
