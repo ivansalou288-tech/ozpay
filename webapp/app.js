@@ -108,39 +108,25 @@ const STATUS_LABEL = {
     offline: 'Офлайн',
 };
 
-const API_PORT = '5001';
+const API = 'https://api.ozpay.ru:5001/api';
+const devices = [];
 
-function apiBases() {
-    const origin = location.origin;
-    const fallback = `${location.protocol}//${location.hostname}:${API_PORT}`;
-    const bases = [`${origin}/api`];
-    if (origin !== fallback) bases.push(`${fallback}/api`);
-    return bases;
-}
+let activeFilter = 'all';
 
 async function api(path, options = {}) {
-    const headers = { Accept: 'application/json', ...(options.headers || {}) };
-    let lastError = new Error('Нет ответа от API');
-
-    for (const base of apiBases()) {
-        try {
-            const response = await fetch(base + path, { ...options, headers });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const detail = payload.detail;
-                const message = Array.isArray(detail)
-                    ? detail.map((item) => item.msg || item).join(', ')
-                    : (detail || `${response.status} ${response.statusText}`);
-                lastError = new Error(message);
-                continue;
-            }
-            return payload;
-        } catch (error) {
-            lastError = error;
-        }
+    const response = await fetch(API + path, {
+        ...options,
+        headers: { Accept: 'application/json', ...(options.headers || {}) },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const detail = payload.detail;
+        const message = Array.isArray(detail)
+            ? detail.map((item) => item.msg || item).join(', ')
+            : (detail || `${response.status} ${response.statusText}`);
+        throw new Error(message);
     }
-
-    throw lastError;
+    return payload;
 }
 
 function upsertDevice(updated) {
