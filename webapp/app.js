@@ -42,9 +42,16 @@ function initTelegram() {
     tg.ready();
     tg.expand();
 
-    if (versionAtLeast('8.0')) {
-        try { tg.requestFullscreen(); } catch (e) { /* клиент не поддерживает */ }
-        tg.disableVerticalSwipes();
+    const goFullscreen = () => {
+        if (typeof tg.requestFullscreen === 'function') {
+            try { tg.requestFullscreen(); } catch (e) { /* клиент не поддерживает */ }
+        }
+    };
+    goFullscreen();
+    setTimeout(goFullscreen, 250);
+
+    if (versionAtLeast('8.0') || typeof tg.disableVerticalSwipes === 'function') {
+        try { tg.disableVerticalSwipes(); } catch (e) { /* клиент не поддерживает */ }
         tg.onEvent('safeAreaChanged', applyViewport);
         tg.onEvent('contentSafeAreaChanged', applyViewport);
         tg.onEvent('fullscreenChanged', applyViewport);
@@ -496,7 +503,8 @@ async function checkDevice(rootEl, field) {
         } else {
             haptic.notify('error');
             showToast(error.message || 'Не удалось обновить');
-        } finally {
+        }
+    } finally {
         localChecks.delete(deviceId);
         if (deviceIsBusy(devices.find((item) => item.id === deviceId))) {
             serverBusy.add(deviceId);
