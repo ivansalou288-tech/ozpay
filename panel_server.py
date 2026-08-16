@@ -8,8 +8,10 @@
 from __future__ import annotations
 
 import asyncio
+import queue
 import re
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -20,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
 from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices
-from main import check_balance, check_cards, check_turnover, full_check, probe_adb
+from main import add_device, check_balance, check_cards, check_turnover, full_check, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
 PORT = 5001
@@ -44,6 +46,61 @@ api = APIRouter(prefix="/api")
 
 _device_locks: dict[str, asyncio.Lock] = {}
 _checking: set[str] = set()
+
+# Активные сессии входа в ЛК (device_id -> LoginSession).
+_login_sessions: dict[str, "LoginSession"] = {}
+_ACTIVE_LOGIN_STATES = {"running", "awaiting_code", "verifying"}
+CODE_WAIT_TIMEOUT = 300.0
+
+
+class LoginSession:
+    """Интерактивная сессия входа: add_device выполняется в отдельном потоке и на
+    шаге ввода кода блокируется, ожидая код из мини-аппа через submit_code()."""
+
+    def __init__(self, device_id: str, number: str, password: str):
+        self.device_id = device_id
+        self.number = number
+        self.password = password
+        self.status = "running"  # running | awaiting_code | verifying | done | error
+        self.method: Optional[str] = None
+        self.target: Optional[str] = None
+        self.error: Optional[str] = None
+        self.device: Optional[dict] = None
+        self._code_q: "queue.Queue[str]" = queue.Queue(maxsize=1)
+        self.thread: Optional[threading.Thread] = None
+
+    def code_provider(self, hint=None):
+        if hint:
+            self.method = hint.get("method")
+            self.target = hint.get("target")
+        self.status = "awaiting_code"
+        try:
+            code = self._code_q.get(timeout=CODE_WAIT_TIMEOUT)
+        except queue.Empty as exc:
+            raise RuntimeError("Код не был введён вовремя") from exc
+        self.status = "verifying"
+        return code
+
+    def submit_code(self, code: str):
+        self._code_q.put(code)
+
+
+def _run_login(session: LoginSession):
+    try:
+        add_device(
+            session.device_id,
+            session.number,
+            session.password,
+            code_provider=session.code_provider,
+            press_get_new_code=False,
+        )
+        session.device = serialize_device(_require_device(session.device_id))
+        session.status = "done"
+    except Exception as exc:  # noqa: BLE001 — прокидываем текст ошибки в UI
+        session.error = str(exc)
+        session.status = "error"
+    finally:
+        _checking.discard(session.device_id)
 
 
 def _lock_for(device_id: str) -> asyncio.Lock:
@@ -271,6 +328,60 @@ async def api_check_device(device_id: str, kind: str) -> dict:
         _checking.discard(device_id)
 
     return {"device": serialize_device(_require_device(device_id))}
+
+
+@api.post("/devices/{device_id}/login")
+async def api_login_start(device_id: str, request: Request) -> dict:
+    _require_device(device_id)
+
+    body = await request.json()
+    number = re.sub(r"\D", "", str(body.get("number") or ""))
+    password = re.sub(r"\D", "", str(body.get("password") or ""))
+    if not number:
+        raise HTTPException(status_code=400, detail="Укажите номер телефона")
+    if not password:
+        raise HTTPException(status_code=400, detail="Укажите пароль (код-пароль)")
+
+    existing = _login_sessions.get(device_id)
+    if existing and existing.status in _ACTIVE_LOGIN_STATES:
+        raise HTTPException(status_code=409, detail="Вход уже выполняется")
+    if device_id in _checking:
+        raise HTTPException(status_code=409, detail="Девайс занят проверкой")
+
+    session = LoginSession(device_id, number, password)
+    _login_sessions[device_id] = session
+    _checking.add(device_id)
+    session.thread = threading.Thread(target=_run_login, args=(session,), daemon=True)
+    session.thread.start()
+    return {"status": session.status}
+
+
+@api.get("/devices/{device_id}/login")
+async def api_login_status(device_id: str) -> dict:
+    session = _login_sessions.get(device_id)
+    if not session:
+        return {"status": "idle"}
+    payload = {"status": session.status, "method": session.method, "target": session.target}
+    if session.status == "error":
+        payload["error"] = session.error
+    if session.status == "done" and session.device:
+        payload["device"] = session.device
+    return payload
+
+
+@api.post("/devices/{device_id}/login/code")
+async def api_login_code(device_id: str, request: Request) -> dict:
+    session = _login_sessions.get(device_id)
+    if not session or session.status != "awaiting_code":
+        raise HTTPException(status_code=409, detail="Сейчас код не ожидается")
+
+    body = await request.json()
+    code = re.sub(r"\D", "", str(body.get("code") or ""))
+    if len(code) != 6:
+        raise HTTPException(status_code=400, detail="Код должен состоять из 6 цифр")
+
+    session.submit_code(code)
+    return {"status": "verifying"}
 
 
 app.include_router(api)

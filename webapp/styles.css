@@ -1098,6 +1098,26 @@ body {
     min-width: 180px;
 }
 
+/* ---------- прогресс входа в ЛК ---------- */
+
+.login-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 0 6px;
+}
+
+.login-progress__spinner {
+    display: flex;
+    color: var(--violet-bright);
+}
+
+.login-progress__spinner svg {
+    width: 34px;
+    height: 34px;
+    animation: spin 0.8s linear infinite;
+}
+
 /* ---------- toast ---------- */
 
 .toast {

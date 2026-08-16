@@ -1,9 +1,11 @@
 import re
+import io
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from db_api import *
 from ppadb.client import Client as AdbClient
+from PIL import Image
 import os
 import datetime
 from tap_one_point import tap_one_point
@@ -1087,6 +1089,330 @@ def parse_turnover(text: str):
 
 
 
+def _find_node(root, *, resource_id=None, text=None, content_desc=None, contains=False):
+    """Найти первый узел в дампе по resource-id / text / content-desc.
+
+    Совпадение по тексту/описанию — регистронезависимое. `contains=True` — подстрока.
+    resource-id сопоставляется как полное значение или как суффикс ':id/<name>'.
+    """
+    for node in root.iter():
+        if resource_id is not None:
+            rid = node.attrib.get("resource-id", "") or ""
+            if not (rid == resource_id or rid.endswith(":id/" + resource_id) or rid.endswith("/" + resource_id)):
+                continue
+        if text is not None:
+            value = " ".join((node.attrib.get("text") or "").split())
+            if contains:
+                if text.lower() not in value.lower():
+                    continue
+            elif value.lower() != text.lower():
+                continue
+        if content_desc is not None:
+            cd = " ".join((node.attrib.get("content-desc") or "").split())
+            if contains:
+                if content_desc.lower() not in cd.lower():
+                    continue
+            elif cd.lower() != content_desc.lower():
+                continue
+        return node
+    return None
+
+
+def find_node_bounds(device, *, resource_id=None, text=None, content_desc=None, contains=False):
+    """Свежий дамп + поиск узла. Возвращает (node, bounds_dict) либо (None, None)."""
+    root = get_dump_root(dump_ui_xml(device))
+    node = _find_node(root, resource_id=resource_id, text=text, content_desc=content_desc, contains=contains)
+    if node is None:
+        return None, None
+    return node, parse_bounds(node.attrib.get("bounds"))
+
+
+def is_on_login_screen(device) -> bool:
+    """Экран входа: есть заголовок 'Введите номер телефона' и поле ввода телефона."""
+    root = get_dump_root(dump_ui_xml(device))
+    title = _find_node(root, text="Введите номер телефона")
+    field = _find_node(root, resource_id="inputEditText")
+    return title is not None and field is not None
+
+
+def clear_text_field(device, resource_id: str = "inputEditText") -> bool:
+    """Фокус на поле ввода и удаление всего введённого текста."""
+    node, bounds = find_node_bounds(device, resource_id=resource_id)
+    if node is None or bounds is None:
+        log(f"clear_text_field: поле {resource_id!r} не найдено")
+        return False
+    tap_screen_point(device, bounds["center"])
+    time.sleep(0.5)
+    current = node.attrib.get("text") or ""
+    count = max(len(current) + 4, 16)
+    device.shell("input keyevent 123")  # KEYCODE_MOVE_END — курсор в конец
+    device.shell("input keyevent " + " ".join(["67"] * count))  # KEYCODE_DEL xN
+    time.sleep(0.4)
+    return True
+
+
+def type_into_field(device, resource_id: str, digits, attempts: int = 3) -> bool:
+    """Надёжно ввести цифры в поле: посимвольно + сверка с текстом поля, с повтором.
+
+    `input text` на redroid иногда теряет символы, поэтому вводим по одному и
+    проверяем итоговое значение, очищая и повторяя при расхождении.
+    """
+    digits = re.sub(r"\D", "", str(digits))
+    for attempt in range(1, attempts + 1):
+        clear_text_field(device, resource_id=resource_id)
+        node, bounds = find_node_bounds(device, resource_id=resource_id)
+        if bounds is not None:
+            tap_screen_point(device, bounds["center"])
+            time.sleep(0.4)
+        for ch in digits:
+            device.shell(f"input text {ch}")
+            time.sleep(0.12)
+        time.sleep(0.6)
+        node, _ = find_node_bounds(device, resource_id=resource_id)
+        got = re.sub(r"\D", "", node.attrib.get("text") or "") if node is not None else ""
+        if got == digits:
+            return True
+        log(f"type_into_field({resource_id}): попытка {attempt}: получено {got!r}, ожидалось {digits!r}")
+    return False
+
+
+def dismiss_permission_dialog(device) -> bool:
+    """Если показан диалог 'Для правильной работы ... предоставьте' — нажать 'Отмена'."""
+    root = get_dump_root(dump_ui_xml(device))
+    marker = (
+        _find_node(root, text="Для правильной работы", contains=True)
+        or _find_node(root, resource_id="permissions_missing_start")
+    )
+    if marker is None:
+        return False
+    log("Обнаружен диалог разрешений — нажимаю 'Отмена'")
+    node, bounds = find_node_bounds(device, text="Отмена")
+    if bounds is None:
+        node, bounds = find_node_bounds(device, resource_id="button2")
+    if bounds is None:
+        log("dismiss_permission_dialog: кнопка 'Отмена' не найдена")
+        return False
+    tap_screen_point(device, bounds["center"])
+    time.sleep(1.5)
+    return True
+
+
+def _get_new_code_button_enabled(device):
+    """True/False — активна ли кнопка 'Получить новый код' (синяя vs серая с таймером).
+
+    Возвращает None, если кнопки нет на экране. Определяем по цвету пикселя у левого
+    края кнопки: активная ~ (0,91,255), неактивная ~ (245,247,250).
+    """
+    node, bounds = find_node_bounds(device, resource_id="getNewCodeButton")
+    if bounds is None:
+        return None
+    x = bounds["left"] + max(20, (bounds["right"] - bounds["left"]) // 8)
+    y = bounds["center"][1]
+    try:
+        data = device.screencap()
+        image = Image.open(io.BytesIO(bytes(data))).convert("RGB")
+        r, g, b = image.getpixel((x, y))
+    except Exception as exc:
+        log(f"_get_new_code_button_enabled: screencap не удался: {exc}")
+        return None
+    is_blue = b > 150 and r < 120 and (b - r) > 80
+    log(f"getNewCode pixel@({x},{y})=({r},{g},{b}) -> {'активна' if is_blue else 'неактивна'}")
+    return is_blue
+
+
+def wait_and_tap_get_new_code(device, timeout: float = 90.0) -> bool:
+    """Ждёт, пока кнопка 'Получить новый код' станет активной, и нажимает её."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        state = _get_new_code_button_enabled(device)
+        if state is None:
+            log("Кнопка 'Получить новый код' не найдена, жду...")
+        elif state:
+            node, bounds = find_node_bounds(device, resource_id="getNewCodeButton")
+            if bounds is not None:
+                log("Кнопка 'Получить новый код' активна — нажимаю")
+                tap_screen_point(device, bounds["center"])
+                time.sleep(2.0)
+                return True
+        else:
+            log("Кнопка 'Получить новый код' ещё в таймере, жду...")
+        time.sleep(2.0)
+    log("Таймаут ожидания активации кнопки 'Получить новый код'")
+    return False
+
+
+def enter_flash_call_code(device, code: str) -> bool:
+    """Вводит 6-значный код в поле подтверждения.
+
+    Поле кода — OTP-виджет: он не отдаёт введённый текст в атрибут `text`, а при
+    верном коде Ozon сам уходит на экран пароля. Поэтому НЕ сверяем и НЕ чистим
+    поле повторно — просто вводим цифры один раз, посимвольно.
+    """
+    digits = re.sub(r"\D", "", str(code))
+    node, bounds = find_node_bounds(device, resource_id="inputEditText")
+    if bounds is None:
+        log("enter_flash_call_code: поле ввода кода не найдено")
+        return False
+    tap_screen_point(device, bounds["center"])
+    time.sleep(0.5)
+    for ch in digits:
+        device.shell(f"input text {ch}")
+        time.sleep(0.15)
+    time.sleep(1.0)
+    return True
+
+
+def wait_for_lock_screen(device, timeout: float = 25.0) -> bool:
+    """Ждёт появления экрана пароля (Ozon сам перекидывает при верном коде)."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            if is_lock_screen_text(get_dump_text(device)):
+                return True
+        except Exception:
+            pass
+        time.sleep(2.0)
+    return False
+
+
+def enter_lock_password_repeated(device, password: str, max_rounds: int = 2) -> bool:
+    """Вводит пароль на экране блокировки. При сценарии 'придумайте + повторите'
+    код-пароль вводится дважды, поэтому повторяем ввод, пока экран пароля остаётся."""
+    entered_any = False
+    for _ in range(max_rounds):
+        if not is_lock_screen_text(get_dump_text(device)):
+            break
+        if ensure_lock_screen_unlocked(device, password):
+            entered_any = True
+        time.sleep(3.0)
+    return entered_any
+
+
+def detect_code_screen(device):
+    """Определяет экран ввода кода: тип доставки (звонок/СМС) и целевой номер.
+
+    Возвращает {'method': 'call'|'sms'|'code', 'target': '+7 ...'} или None.
+    """
+    try:
+        dump = get_dump_text(device)
+    except Exception:
+        return None
+    method = None
+    if re.search(r"последн\w*\s+6\s+цифр", dump, flags=re.IGNORECASE) or re.search(r"звоним", dump, flags=re.IGNORECASE):
+        method = "call"
+    elif re.search(r"Отправили\s+код|Введите\s+код|СМС|SMS", dump, flags=re.IGNORECASE):
+        method = "sms"
+    target = None
+    match = re.search(r"\+7[\s\-()0-9]{7,}", dump)
+    if match:
+        target = " ".join(match.group(0).split())
+    if method is None and target is None:
+        return None
+    return {"method": method or "code", "target": target}
+
+
+def add_device(device_name, number, password, code_provider=None, new_code_timeout: float = 120.0, press_get_new_code: bool = True):
+    """Добавить (залогинить) ЛК в приложении Ozon по номеру телефона и паролю.
+
+    Шаги:
+      1) проверка, что открыт экран входа (заголовок + поле телефона);
+      2) очистка поля ввода;
+      3) ввод номера без +7 (например 9000000000);
+      4) нажатие 'Войти' (+ закрытие диалога разрешений через 'Отмена');
+      5) ожидание активации 'Получить новый код' и нажатие;
+      6) запрос 6-значного кода у пользователя (code_provider);
+      7) ввод кода;
+      8) проверка перехода на экран пароля и ввод пароля существующей функцией;
+      9) сохранение номера/пароля в БД и отчёт с предложением полного чека.
+
+    `code_provider` — callable без аргументов, возвращающий код (по умолчанию input()).
+    """
+    if code_provider is None:
+        def code_provider():
+            return input("Введите 6-значный код из входящего звонка/СМС: ").strip()
+
+    device = connect_redroid(device_name=device_name)
+
+    # 1) экран входа
+    if not is_on_login_screen(device):
+        raise RuntimeError(
+            "Сейчас открыт не экран входа: нет поля телефона или заголовка 'Введите номер телефона'"
+        )
+    log("Экран входа подтверждён")
+
+    # 2) стереть всё введённое
+    clear_text_field(device, resource_id="inputEditText")
+
+    # 3) ввести номер без +7
+    digits = re.sub(r"\D", "", str(number))
+    if len(digits) == 11 and digits[0] in ("7", "8"):
+        digits = digits[1:]
+    log(f"Ввожу номер телефона: {digits}")
+    if not type_into_field(device, "inputEditText", digits):
+        raise RuntimeError(f"Не удалось корректно ввести номер телефона {digits}")
+
+    # 4) нажать 'Войти' (клавиатура перекрывает кнопку — прячем её)
+    device.shell("input keyevent 111")  # KEYCODE_ESCAPE — скрыть клавиатуру
+    time.sleep(0.8)
+    node, bounds = find_node_bounds(device, resource_id="submitButton")
+    if bounds is None:
+        node, bounds = find_node_bounds(device, text="Войти")
+    if bounds is None:
+        raise RuntimeError("Не найдена кнопка 'Войти'")
+    tap_screen_point(device, bounds["center"])
+    time.sleep(4.0)
+
+    # диалог 'Для правильной работы ... предоставьте' -> Отмена
+    dismiss_permission_dialog(device)
+    time.sleep(1.0)
+
+    # 5) дождаться и нажать 'Получить новый код' (по флагу; код и так уже отправлен
+    #    сразу после 'Войти', поэтому нажатие resend можно пропустить)
+    if press_get_new_code:
+        if not wait_and_tap_get_new_code(device, timeout=new_code_timeout):
+            raise RuntimeError(
+                "Кнопка 'Получить новый код' не стала активной за отведённое время "
+                "(возможно, сработал лимит повторной отправки — попробуйте позже)"
+            )
+        dismiss_permission_dialog(device)
+    else:
+        log("Пропускаю 'Получить новый код' — использую код из первой отправки")
+
+    # 6) запросить код у пользователя (с подсказкой о типе доставки)
+    code_hint = detect_code_screen(device)
+    log(f"Экран кода: {code_hint}")
+    try:
+        raw_code = code_provider(code_hint)
+    except TypeError:
+        raw_code = code_provider()
+    code = re.sub(r"\D", "", str(raw_code))
+    if len(code) != 6:
+        raise RuntimeError(f"Ожидался код из 6 цифр, получено: {code!r}")
+    log("Код получен, ввожу")
+
+    # 7) ввести код
+    if not enter_flash_call_code(device, code):
+        raise RuntimeError("Не удалось ввести код")
+
+    # 8) при верном коде Ozon сам перекидывает на экран пароля — ждём его
+    if not wait_for_lock_screen(device, timeout=25.0):
+        raise RuntimeError("После ввода кода не появился экран пароля — вероятно, код неверный")
+    log("Экран пароля обнаружен — ввожу пароль")
+    if not enter_lock_password_repeated(device, password):
+        raise RuntimeError("Не удалось ввести пароль на экране блокировки")
+
+    # сохранить данные в БД
+    update_number(device_name, number)
+    update_password(device_name, password)
+
+    log(f"ЛК добавлен для '{device_name}' (номер {number}).")
+    print(
+        f"ЛК '{device_name}' успешно добавлен. "
+        f"Рекомендую выполнить полный чек: full_check('{device_name}')."
+    )
+    return True
+
+
 def full_check(device_name):
     """Выполнить полный чек по шагам:
     1) подключиться к устройству по имени
@@ -1429,4 +1755,5 @@ if __name__ == "__main__":
     # full_check('device1')
     # check_balance('device1')
     # check_turnover('device1')
-    check_cards('device1')
+    # check_cards('device1')
+    add_device('device2', '79181165111', '1203')

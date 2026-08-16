@@ -659,6 +659,7 @@ function openSheet(html) {
 }
 
 function closeSheet() {
+    stopLoginPoll();
     sheet.classList.remove('is-open');
     sheetBackdrop.classList.remove('is-open');
     if (tg && tg.BackButton) {
@@ -712,6 +713,11 @@ deviceScreen.addEventListener('click', (event) => {
 
     if (event.target.closest('[data-action="delete"]')) {
         askDeleteDevice(detail.dataset.id);
+        return;
+    }
+
+    if (event.target.closest('[data-action="login"]')) {
+        startLoginFlow(detail.dataset.id);
         return;
     }
 
@@ -826,6 +832,226 @@ async function onAddSubmit(event) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Сохранить';
     }
+}
+
+/* ---------- Вход в личный кабинет (add_device) ---------- */
+
+let loginPollTimer = null;
+let loginShownStatus = null;
+
+function stopLoginPoll() {
+    if (loginPollTimer) {
+        clearTimeout(loginPollTimer);
+        loginPollTimer = null;
+    }
+}
+
+function scheduleLoginPoll(deviceId, delay = 2000) {
+    stopLoginPoll();
+    loginPollTimer = setTimeout(() => tickLogin(deviceId), delay);
+}
+
+function renderLoginProgress(title, sub) {
+    openSheet(`
+        <h3 class="sheet__title">${title}</h3>
+        <p class="sheet__sub">${sub}</p>
+        <div class="login-progress"><span class="login-progress__spinner">${LOAD_ICON}</span></div>
+    `);
+}
+
+function startLoginFlow(deviceId) {
+    haptic.impact('medium');
+    stopLoginPoll();
+    loginShownStatus = null;
+    openSheet(`
+        <h3 class="sheet__title">Вход в личный кабинет</h3>
+        <form class="form" id="loginForm" autocomplete="off">
+            <label class="field">
+                <span class="field__label">Номер телефона *</span>
+                <input class="field__input" name="number" placeholder="900 000 00 00" inputmode="tel" required>
+            </label>
+            <label class="field">
+                <span class="field__label">Код-пароль *</span>
+                <input class="field__input" name="password" placeholder="4 цифры" inputmode="numeric" required>
+            </label>
+            <div class="sheet__actions">
+                <button type="submit" class="btn btn--primary">Войти</button>
+                <button type="button" class="btn" data-action="cancel">Отмена</button>
+            </div>
+        </form>
+    `);
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', (event) => onLoginSubmit(event, deviceId));
+    form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+    setTimeout(() => form.elements.number.focus(), 80);
+}
+
+async function onLoginSubmit(event, deviceId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const number = form.elements.number.value.trim();
+    const password = form.elements.password.value.trim();
+    if (!number || !password) {
+        showToast('Укажите номер и код-пароль');
+        return;
+    }
+
+    loginShownStatus = 'running';
+    renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа');
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number, password }),
+        });
+        scheduleLoginPoll(deviceId, 1200);
+    } catch (error) {
+        haptic.notify('error');
+        renderLoginError(deviceId, error.message || 'Не удалось начать вход');
+    }
+}
+
+async function tickLogin(deviceId) {
+    let data;
+    try {
+        data = await api(`/devices/${encodeURIComponent(deviceId)}/login`);
+    } catch (error) {
+        scheduleLoginPoll(deviceId, 2500);
+        return;
+    }
+    handleLoginStatus(deviceId, data);
+}
+
+function handleLoginStatus(deviceId, data) {
+    switch (data.status) {
+        case 'running':
+            if (loginShownStatus !== 'running') {
+                loginShownStatus = 'running';
+                renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа');
+            }
+            scheduleLoginPoll(deviceId, 2000);
+            break;
+        case 'awaiting_code':
+            if (loginShownStatus !== 'awaiting_code') {
+                loginShownStatus = 'awaiting_code';
+                haptic.notify('warning');
+                renderCodeForm(deviceId, data);
+            }
+            scheduleLoginPoll(deviceId, 3000);
+            break;
+        case 'verifying':
+            if (loginShownStatus !== 'verifying') {
+                loginShownStatus = 'verifying';
+                renderLoginProgress('Проверяю код…', 'Ввожу код-пароль');
+            }
+            scheduleLoginPoll(deviceId, 2000);
+            break;
+        case 'done':
+            stopLoginPoll();
+            loginShownStatus = null;
+            onLoginDone(deviceId, data.device);
+            break;
+        case 'error':
+            stopLoginPoll();
+            loginShownStatus = null;
+            renderLoginError(deviceId, data.error);
+            break;
+        default:
+            scheduleLoginPoll(deviceId, 2000);
+    }
+}
+
+function renderCodeForm(deviceId, info) {
+    const target = info.target || '';
+    let hint;
+    if (info.method === 'call') {
+        hint = `Вам поступает звонок${target ? ' на ' + target : ''}. Отвечать не нужно — введите последние 6 цифр входящего номера.`;
+    } else if (info.method === 'sms') {
+        hint = `Код отправлен по СМС${target ? ' на ' + target : ''}. Введите 6 цифр из сообщения.`;
+    } else {
+        hint = `Введите 6-значный код${target ? ', отправленный на ' + target : ''}.`;
+    }
+    openSheet(`
+        <h3 class="sheet__title">Подтверждение входа</h3>
+        <p class="sheet__sub">${hint}</p>
+        <form class="form" id="codeForm" autocomplete="off">
+            <label class="field">
+                <span class="field__label">Код *</span>
+                <input class="field__input" name="code" placeholder="6 цифр" inputmode="numeric" maxlength="6" required>
+            </label>
+            <div class="sheet__actions">
+                <button type="submit" class="btn btn--primary">Подтвердить</button>
+                <button type="button" class="btn" data-action="cancel">Отмена</button>
+            </div>
+        </form>
+    `);
+    const form = document.getElementById('codeForm');
+    form.addEventListener('submit', (event) => onCodeSubmit(event, deviceId));
+    form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+    setTimeout(() => form.elements.code.focus(), 80);
+}
+
+async function onCodeSubmit(event, deviceId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const code = form.elements.code.value.replace(/\D/g, '');
+    if (code.length !== 6) {
+        showToast('Нужно ввести 6 цифр');
+        return;
+    }
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправляю…';
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}/login/code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code }),
+        });
+        loginShownStatus = 'verifying';
+        renderLoginProgress('Проверяю код…', 'Ввожу код-пароль');
+        scheduleLoginPoll(deviceId, 1500);
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось отправить код');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Подтвердить';
+    }
+}
+
+function onLoginDone(deviceId, device) {
+    if (device) upsertDevice(normalizeDevice(device));
+    haptic.notify('success');
+    closeSheet();
+    const updated = devices.find((item) => item.id === deviceId);
+    if (updated && deviceScreen.classList.contains('screen--active')) {
+        deviceScreen.innerHTML = renderDeviceScreen(updated);
+    }
+    renderDevices();
+    showToast('ЛК добавлен');
+}
+
+function renderLoginError(deviceId, message) {
+    haptic.notify('error');
+    openSheet(`
+        <h3 class="sheet__title">Не удалось войти</h3>
+        <p class="sheet__sub">${message || 'Ошибка входа'}</p>
+        <div class="sheet__actions">
+            <button type="button" class="btn btn--primary" data-action="retry">Повторить</button>
+            <button type="button" class="btn" data-action="cancel">Закрыть</button>
+        </div>
+    `);
+    sheetContent.querySelector('[data-action="retry"]').addEventListener('click', () => startLoginFlow(deviceId));
+    sheetContent.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
 }
 
 document.getElementById('addDeviceBtn').addEventListener('click', openAddSheet);
