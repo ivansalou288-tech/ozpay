@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import sqlite3
 from pathlib import Path
 from typing import Optional
 
@@ -139,12 +140,7 @@ def serialize_device(row: dict) -> dict:
     }
 
 
-def _next_device_id() -> str:
-    existing = {row.get("device") for row in list_devices()}
-    index = 1
-    while f"device{index}" in existing:
-        index += 1
-    return f"device{index}"
+_DEVICE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 
 def _require_device(device_id: str) -> dict:
@@ -196,11 +192,13 @@ async def api_list_devices() -> dict:
 @api.post("/devices")
 async def api_create_device(request: Request) -> dict:
     body = await request.json()
-    name = (body.get("name") or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Укажите название")
+    device_id = (body.get("id") or body.get("device") or body.get("name") or "").strip()
+    if not device_id:
+        raise HTTPException(status_code=400, detail="Укажите имя девайса")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", device_id):
+        raise HTTPException(status_code=400, detail="Имя девайса: латиница, цифры, . _ -")
 
-    ip = (str(body.get("ip") or "")).strip() or None
+    ip = (str(body.get("ip") or "")).replace(",", ".").strip() or None
 
     port_raw = body.get("port")
     port = None
@@ -210,9 +208,10 @@ async def api_create_device(request: Request) -> dict:
         except (TypeError, ValueError):
             raise HTTPException(status_code=400, detail="Порт должен быть числом")
 
-    device_id = _next_device_id()
     try:
-        create_device(device_id, name=name, ip=ip, port=port)
+        create_device(device_id, ip=ip, port=port)
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail=f"Девайс '{device_id}' уже есть")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Не удалось создать девайс: {exc}") from exc
 

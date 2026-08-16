@@ -663,14 +663,23 @@ document.addEventListener('click', (event) => {
     showToast(el.dataset.toast);
 });
 
+function normalizeIpInput(input) {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const next = input.value.replace(/,/g, '.');
+    if (next === input.value) return;
+    input.value = next;
+    if (start != null) input.setSelectionRange(start, end);
+}
+
 function openAddSheet() {
     haptic.impact('medium');
     openSheet(`
         <h3 class="sheet__title">Новый девайс</h3>
         <form class="form" id="addForm" autocomplete="off">
             <label class="field">
-                <span class="field__label">Название *</span>
-                <input class="field__input" name="name" placeholder="Например, Евгений" required>
+                <span class="field__label">Имя девайса *</span>
+                <input class="field__input" name="device" placeholder="device1 или redroid00" required>
             </label>
             <label class="field">
                 <span class="field__label">IP</span>
@@ -689,26 +698,27 @@ function openAddSheet() {
 
     const form = document.getElementById('addForm');
     form.addEventListener('submit', onAddSubmit);
+    form.elements.ip.addEventListener('input', () => normalizeIpInput(form.elements.ip));
     form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
         haptic.impact('light');
         closeSheet();
     });
-    setTimeout(() => form.elements.name.focus(), 80);
+    setTimeout(() => form.elements.device.focus(), 80);
 }
 
 async function onAddSubmit(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const name = form.elements.name.value.trim();
-    if (!name) {
-        showToast('Укажите название');
+    const device = form.elements.device.value.trim();
+    if (!device) {
+        showToast('Укажите имя девайса');
         return;
     }
 
     const payload = {
-        name,
-        ip: form.elements.ip.value.trim(),
+        id: device,
+        ip: form.elements.ip.value.replace(/,/g, '.').trim(),
         port: form.elements.port.value.trim(),
     };
 
