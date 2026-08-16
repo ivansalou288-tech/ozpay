@@ -143,7 +143,25 @@ def _require_device(device_id: str) -> dict:
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
+    if request.method == "OPTIONS":
+        origin = request.headers.get("origin", "*")
+        from fastapi.responses import Response
+        return Response(
+            status_code=204,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Accept, Content-Type",
+                "Access-Control-Max-Age": "86400",
+                "Vary": "Origin",
+            },
+        )
     response = await call_next(request)
+    origin = request.headers.get("origin")
+    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Accept, Content-Type"
+    response.headers["Vary"] = "Origin"
     print(f"{request.method} {request.url.path} -> {response.status_code}")
     return response
 

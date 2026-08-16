@@ -185,7 +185,7 @@ body {
 .screens {
     flex: 1;
     min-height: 0;
-    padding: 0 var(--gutter) calc(28px + var(--safe-bottom));
+    padding: 10px var(--gutter) calc(28px + var(--safe-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }

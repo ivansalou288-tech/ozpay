@@ -110,15 +110,24 @@ const STATUS_LABEL = {
 
 const API = 'https://api.ozpay.ru:5001/api';
 const devices = [];
+const checkingByDevice = new Map();
 
 let activeFilter = 'all';
 
 async function api(path, options = {}) {
     const response = await fetch(API + path, {
         ...options,
+        mode: 'cors',
+        credentials: 'omit',
         headers: { Accept: 'application/json', ...(options.headers || {}) },
     });
-    const payload = await response.json().catch(() => ({}));
+    const text = await response.text();
+    let payload = {};
+    try {
+        payload = text ? JSON.parse(text) : {};
+    } catch (error) {
+        throw new Error('Сервер вернул не JSON');
+    }
     if (!response.ok) {
         const detail = payload.detail;
         const message = Array.isArray(detail)
@@ -129,6 +138,29 @@ async function api(path, options = {}) {
     return payload;
 }
 
+function isChecking(deviceId, field) {
+    const current = checkingByDevice.get(deviceId);
+    if (!current) return false;
+    return field ? current === field || current === 'all' : true;
+}
+
+function checkingClass(deviceId) {
+    return isChecking(deviceId) ? ' is-checking' : '';
+}
+
+function loadingClass(deviceId, field) {
+    const current = checkingByDevice.get(deviceId);
+    if (!current) return '';
+    if (current === 'all' || current === field) return ' is-loading';
+    return '';
+}
+
+function busyClass(deviceId, field) {
+    const current = checkingByDevice.get(deviceId);
+    if (current === field || current === 'all') return ' is-busy';
+    return '';
+}
+
 function upsertDevice(updated) {
     const index = devices.findIndex((item) => item.id === updated.id);
     if (index >= 0) devices[index] = updated;
@@ -137,7 +169,13 @@ function upsertDevice(updated) {
 
 async function loadDevices() {
     const data = await api('/devices');
-    devices.splice(0, devices.length, ...(data.devices || []));
+    if (!Array.isArray(data.devices)) {
+        throw new Error('API не вернул список девайсов');
+    }
+    devices.splice(0, devices.length, ...data.devices.map((item) => ({
+        ...item,
+        cards: Array.isArray(item.cards) ? item.cards : [],
+    })));
     renderDevices();
 }
 
@@ -156,13 +194,14 @@ function last4(card) {
 }
 
 function renderCards(cards) {
-    if (!cards.length) {
+    const list = Array.isArray(cards) ? cards : [];
+    if (!list.length) {
         return '<span class="card-stack__empty">Карт нет</span>';
     }
-    const shown = cards.slice(0, 4).map((card) => `
+    const shown = list.slice(0, 4).map((card) => `
         <span class="mini-card">${last4(card)}</span>
     `).join('');
-    const rest = cards.length - 4;
+    const rest = list.length - 4;
     return shown + (rest > 0 ? `<span class="card-stack__more">+${rest}</span>` : '');
 }
 
@@ -195,8 +234,9 @@ function renderDevices() {
 }
 
 function renderDevice(device, index = 0) {
+    const id = device.id;
     return `
-        <div class="device device--${device.status}" data-id="${device.id}" style="animation-delay:${index * 45}ms">
+        <div class="device device--${device.status}${checkingClass(id)}" data-id="${id}" style="animation-delay:${index * 45}ms">
             <div class="device__head">
                 <div class="device__title">
                     <span class="device__name">${device.name}</span>
@@ -205,22 +245,22 @@ function renderDevice(device, index = 0) {
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
-                <button class="load-btn" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
+                <button class="load-btn${busyClass(id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
             <div class="device__stats">
-                <div class="tile" data-field="balance">
-                    <button class="load-btn load-btn--sm" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>
+                <div class="tile${loadingClass(id, 'balance')}" data-field="balance">
+                    <button class="load-btn load-btn--sm${busyClass(id, 'balance')}" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>
                     <b class="tile__value">${money(device.balance)}</b>
                     <span class="tile__label">баланс</span>
                 </div>
-                <div class="tile" data-field="turnover">
-                    <button class="load-btn load-btn--sm" data-check="turnover" aria-label="Обновить оборот">${LOAD_ICON}</button>
+                <div class="tile${loadingClass(id, 'turnover')}" data-field="turnover">
+                    <button class="load-btn load-btn--sm${busyClass(id, 'turnover')}" data-check="turnover" aria-label="Обновить оборот">${LOAD_ICON}</button>
                     <b class="tile__value">${money(turnover(device))}</b>
                     <span class="tile__label">оборот</span>
                 </div>
             </div>
-            <div class="tile tile--cards" data-field="cards">
-                <button class="load-btn load-btn--sm" data-check="cards" aria-label="Обновить карты">${LOAD_ICON}</button>
+            <div class="tile tile--cards${loadingClass(id, 'cards')}" data-field="cards">
+                <button class="load-btn load-btn--sm${busyClass(id, 'cards')}" data-check="cards" aria-label="Обновить карты">${LOAD_ICON}</button>
                 <span class="tile__label">карты</span>
                 <div class="card-stack">${renderCards(device.cards)}</div>
             </div>
@@ -264,32 +304,32 @@ function renderDeviceScreen(device) {
     const inShare = Math.round((device.income / flowTotal) * 100);
 
     return `
-        <div class="detail device--${device.status}" data-id="${device.id}">
+        <div class="detail device--${device.status}${checkingClass(device.id)}" data-id="${device.id}">
             <div class="detail__top">
                 <button class="icon-btn" data-action="back" aria-label="Назад">${BACK_ICON}</button>
                 <div class="detail__title-wrap">
                     <span class="detail__name">${device.name}</span>
                     <span class="detail__meta">
-                        <i class="detail__dot"></i>${STATUS_LABEL[device.status]} · ${device.number}
+                        <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status} · ${device.number}
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
-                <button class="load-btn" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
+                <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
 
-            <div class="tile detail__balance" data-field="balance">
-                <button class="load-btn load-btn--sm" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>
+            <div class="tile detail__balance${loadingClass(device.id, 'balance')}" data-field="balance">
+                <button class="load-btn load-btn--sm${busyClass(device.id, 'balance')}" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>
                 <span class="tile__label">баланс</span>
                 <span class="detail__balance-value">${money(device.balance)}</span>
             </div>
 
-            <div class="detail__flow" data-field="turnover">
+            <div class="detail__flow${loadingClass(device.id, 'turnover')}" data-field="turnover">
                 <div class="tile flow flow--in">
                     <b class="flow__value">+${money(device.income)}</b>
                     <span class="tile__label">приход</span>
                 </div>
                 <div class="tile flow flow--out">
-                    <button class="load-btn load-btn--sm" data-check="turnover" aria-label="Обновить оборот">${LOAD_ICON}</button>
+                    <button class="load-btn load-btn--sm${busyClass(device.id, 'turnover')}" data-check="turnover" aria-label="Обновить оборот">${LOAD_ICON}</button>
                     <b class="flow__value">−${money(device.outcome)}</b>
                     <span class="tile__label">расход</span>
                 </div>
@@ -306,10 +346,10 @@ function renderDeviceScreen(device) {
             <div class="section-head">
                 <h2 class="section-title">Карты</h2>
                 <span class="section-count">${device.cards.length}</span>
-                <button class="load-btn load-btn--sm load-btn--inline" data-check="cards" aria-label="Обновить карты">${LOAD_ICON}</button>
+                <button class="load-btn load-btn--sm load-btn--inline${busyClass(device.id, 'cards')}" data-check="cards" aria-label="Обновить карты">${LOAD_ICON}</button>
             </div>
-            <div class="cards-full" data-field="cards">
-                ${device.cards.length ? device.cards.map(renderCardFull).join('') : '<div class="empty">Карты не привязаны.</div>'}
+            <div class="cards-full${loadingClass(device.id, 'cards')}" data-field="cards">
+                ${(device.cards && device.cards.length) ? device.cards.map(renderCardFull).join('') : '<div class="empty">Карты не привязаны.</div>'}
             </div>
         </div>
     `;
@@ -345,45 +385,41 @@ function closeDevice() {
 
 /* ---------- Проверка девайса ---------- */
 
-const checking = new Set();
-
 function refreshView(deviceId) {
     const device = devices.find((item) => item.id === deviceId);
     const detail = deviceScreen.querySelector('.detail');
-    if (detail && detail.dataset.id === deviceId && device) {
+    if (detail && deviceScreen.classList.contains('screen--active') && device) {
         deviceScreen.innerHTML = renderDeviceScreen(device);
-        return;
     }
-    renderDevices();
+    if (listScreen.classList.contains('screen--active')) {
+        renderDevices();
+    }
 }
 
 async function checkDevice(rootEl, field) {
-    const device = devices.find((d) => d.id === rootEl.dataset.id);
+    const deviceId = rootEl.dataset.id;
+    const device = devices.find((d) => d.id === deviceId);
     if (!device) return;
-    const key = device.id + ':' + field;
-    if (checking.has(key)) return;
-    checking.add(key);
+    if (checkingByDevice.has(deviceId)) return;
 
-    const targets = field === 'all'
-        ? [...rootEl.querySelectorAll('[data-field]')]
-        : [...rootEl.querySelectorAll(`[data-field="${field}"]`)];
-
-    targets.forEach((tile) => tile.classList.add('is-loading'));
-    const loadBtn = rootEl.querySelector(`.load-btn[data-check="${field}"]`);
-    if (loadBtn) loadBtn.classList.add('is-busy');
-    rootEl.classList.add('is-checking');
+    checkingByDevice.set(deviceId, field);
+    refreshView(deviceId);
     haptic.impact('medium');
 
     try {
-        const data = await api(`/devices/${encodeURIComponent(device.id)}/check/${field}`, { method: 'POST' });
-        upsertDevice(data.device);
+        const data = await api(`/devices/${encodeURIComponent(deviceId)}/check/${field}`, { method: 'POST' });
+        if (!data.device) throw new Error('API не вернул девайс');
+        upsertDevice({
+            ...data.device,
+            cards: Array.isArray(data.device.cards) ? data.device.cards : [],
+        });
         haptic.notify('success');
     } catch (error) {
         haptic.notify('error');
         showToast(error.message || 'Не удалось обновить');
     } finally {
-        checking.delete(key);
-        refreshView(device.id);
+        checkingByDevice.delete(deviceId);
+        refreshView(deviceId);
     }
 }
 
