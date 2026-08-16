@@ -393,19 +393,42 @@ const LOGIN_OFF_ICON = `
     </svg>
 `;
 
+function deviceLabel(device) {
+    return device.id || device.name || '—';
+}
+
+function renderDeviceSpecs(device) {
+    return `
+        <div class="spec-grid">
+            <div class="spec-cell">
+                <span>имя</span>
+                <b>${deviceLabel(device)}</b>
+            </div>
+            <div class="spec-cell">
+                <span>ip</span>
+                <b>${device.ip || '—'}</b>
+            </div>
+            <div class="spec-cell">
+                <span>порт</span>
+                <b>${device.port || '—'}</b>
+            </div>
+        </div>
+    `;
+}
+
 function renderNewDeviceScreen(device) {
     return `
         <div class="detail device--${device.status}" data-id="${device.id}">
             <div class="detail__top">
                 <button class="icon-btn" data-action="back" aria-label="Назад">${BACK_ICON}</button>
                 <div class="detail__title-wrap">
-                    <span class="detail__name">${device.name}</span>
+                    <span class="detail__name">${deviceLabel(device)}</span>
                     <span class="detail__meta">
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status}
                     </span>
                 </div>
             </div>
-
+            ${renderDeviceSpecs(device)}
             <div class="login-state">
                 <div class="login-state__icon">${LOGIN_OFF_ICON}</div>
                 <p class="login-state__title">Вход в личный кабинет не выполнен</p>
@@ -427,7 +450,7 @@ function renderDeviceScreen(device) {
             <div class="detail__top">
                 <button class="icon-btn" data-action="back" aria-label="Назад">${BACK_ICON}</button>
                 <div class="detail__title-wrap">
-                    <span class="detail__name">${device.name}</span>
+                    <span class="detail__name">${deviceLabel(device)}</span>
                     <span class="detail__meta">
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status} · ${device.number}
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
@@ -435,6 +458,8 @@ function renderDeviceScreen(device) {
                 </div>
                 <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
+
+            ${renderDeviceSpecs(device)}
 
             <div class="tile detail__balance${loadingClass(device.id, 'balance')}" data-field="balance">
                 <button class="load-btn load-btn--sm${busyClass(device.id, 'balance')}" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>

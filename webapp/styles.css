@@ -726,6 +726,39 @@ body {
     box-shadow: 0 0 9px var(--accent, var(--violet));
 }
 
+.spec-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.4fr 0.8fr;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+
+.spec-cell {
+    min-width: 0;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--stroke);
+    background: rgba(12, 8, 26, 0.55);
+}
+
+.spec-cell span {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-dim);
+}
+
+.spec-cell b {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .detail__balance {
     display: flex;
     flex-direction: column;
@@ -1021,7 +1054,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 18px;
-    padding: 54px 20px 40px;
+    padding: 36px 20px 40px;
     text-align: center;
 }
 

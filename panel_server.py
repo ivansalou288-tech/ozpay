@@ -130,6 +130,8 @@ def serialize_device(row: dict) -> dict:
         "id": device_id,
         "name": row.get("name") or device_id,
         "number": row.get("number") or "",
+        "ip": ip or "",
+        "port": port if port not in (None, "") else "",
         "status": status,
         "linked": linked,
         "checking": device_id in _checking,
