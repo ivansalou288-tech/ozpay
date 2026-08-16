@@ -12,8 +12,9 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
@@ -37,6 +38,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api = APIRouter(prefix="/api")
 
 _device_locks: dict[str, asyncio.Lock] = {}
 _checking: set[str] = set()
@@ -138,22 +141,33 @@ def _require_device(device_id: str) -> dict:
     return row
 
 
-@app.get("/api/health")
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    response = await call_next(request)
+    print(f"{request.method} {request.url.path} -> {response.status_code}")
+    return response
+
+
+@api.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/api/devices")
+@api.get("/devices")
 async def api_list_devices() -> dict:
-    return {"devices": [serialize_device(row) for row in list_devices()]}
+    try:
+        rows = list_devices()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Ошибка БД: {exc}") from exc
+    return {"devices": [serialize_device(row) for row in rows]}
 
 
-@app.get("/api/devices/{device_id}")
+@api.get("/devices/{device_id}")
 async def api_get_device(device_id: str) -> dict:
     return {"device": serialize_device(_require_device(device_id))}
 
 
-@app.post("/api/devices/{device_id}/check/{kind}")
+@api.post("/devices/{device_id}/check/{kind}")
 async def api_check_device(device_id: str, kind: str) -> dict:
     if kind not in CHECKERS:
         raise HTTPException(status_code=400, detail="Неизвестный тип проверки")
@@ -173,7 +187,15 @@ async def api_check_device(device_id: str, kind: str) -> dict:
     return {"device": serialize_device(_require_device(device_id))}
 
 
-app.mount("/", StaticFiles(directory=WEBAPP_DIR, html=True), name="webapp")
+app.include_router(api)
+
+
+@app.get("/")
+async def index() -> FileResponse:
+    return FileResponse(WEBAPP_DIR / "index.html")
+
+
+app.mount("/", StaticFiles(directory=WEBAPP_DIR), name="webapp")
 
 
 if __name__ == "__main__":

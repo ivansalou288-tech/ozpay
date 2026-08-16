@@ -108,20 +108,39 @@ const STATUS_LABEL = {
     offline: 'Офлайн',
 };
 
-const API = '/api';
-const devices = [];
+const API_PORT = '5001';
 
-let activeFilter = 'all';
+function apiBases() {
+    const origin = location.origin;
+    const fallback = `${location.protocol}//${location.hostname}:${API_PORT}`;
+    const bases = [`${origin}/api`];
+    if (origin !== fallback) bases.push(`${fallback}/api`);
+    return bases;
+}
 
 async function api(path, options = {}) {
-    const response = await fetch(API + path, options);
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const detail = payload.detail;
-        const message = Array.isArray(detail) ? detail.map((item) => item.msg || item).join(', ') : (detail || response.statusText);
-        throw new Error(message);
+    const headers = { Accept: 'application/json', ...(options.headers || {}) };
+    let lastError = new Error('Нет ответа от API');
+
+    for (const base of apiBases()) {
+        try {
+            const response = await fetch(base + path, { ...options, headers });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const detail = payload.detail;
+                const message = Array.isArray(detail)
+                    ? detail.map((item) => item.msg || item).join(', ')
+                    : (detail || `${response.status} ${response.statusText}`);
+                lastError = new Error(message);
+                continue;
+            }
+            return payload;
+        } catch (error) {
+            lastError = error;
+        }
     }
-    return payload;
+
+    throw lastError;
 }
 
 function upsertDevice(updated) {
