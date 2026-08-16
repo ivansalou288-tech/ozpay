@@ -12,6 +12,7 @@ import queue
 import re
 import sqlite3
 import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -55,7 +56,10 @@ CODE_WAIT_TIMEOUT = 300.0
 
 class LoginSession:
     """Интерактивная сессия входа: add_device выполняется в отдельном потоке и на
-    шаге ввода кода блокируется, ожидая код из мини-аппа через submit_code()."""
+    шаге ввода кода блокируется, ожидая действие из мини-аппа (код или повторную
+    отправку). Пока ждём код, поток сам опрашивает состояние кнопки 'Получить новый
+    код' на устройстве и кладёт его в `resend_available`, чтобы кнопка в панели
+    была активна ровно тогда же, когда она активна в Ozon."""
 
     def __init__(self, device_id: str, number: str, password: str):
         self.device_id = device_id
@@ -66,23 +70,68 @@ class LoginSession:
         self.target: Optional[str] = None
         self.error: Optional[str] = None
         self.device: Optional[dict] = None
-        self._code_q: "queue.Queue[str]" = queue.Queue(maxsize=1)
+        self.resend_available = False
+        self._device = None  # ppadb device, выдаётся add_device на шаге кода
+        self._action_q: "queue.Queue[tuple]" = queue.Queue()
         self.thread: Optional[threading.Thread] = None
 
-    def code_provider(self, hint=None):
-        if hint:
+    def _update_resend_available(self):
+        if self._device is None:
+            return
+        try:
+            from main import _get_new_code_button_enabled
+            state = _get_new_code_button_enabled(self._device)
+            if state is not None:
+                self.resend_available = bool(state)
+        except Exception:
+            pass
+
+    def _perform_resend(self):
+        if self._device is None:
+            return
+        try:
+            from main import detect_code_screen, dismiss_permission_dialog, wait_and_tap_get_new_code
+            self.resend_available = False
+            wait_and_tap_get_new_code(self._device, timeout=10.0)
+            dismiss_permission_dialog(self._device)
+            time.sleep(1.0)
+            hint = detect_code_screen(self._device) or {}
             self.method = hint.get("method")
             self.target = hint.get("target")
+        except Exception:
+            pass
+
+    def code_provider(self, ctx=None):
+        ctx = ctx or {}
+        self._device = ctx.get("device")
+        hint = ctx.get("hint")
+        if hint is None and ("method" in ctx or "target" in ctx):
+            hint = ctx  # совместимость: ctx уже является хинтом
+        hint = hint or {}
+        self.method = hint.get("method")
+        self.target = hint.get("target")
         self.status = "awaiting_code"
-        try:
-            code = self._code_q.get(timeout=CODE_WAIT_TIMEOUT)
-        except queue.Empty as exc:
-            raise RuntimeError("Код не был введён вовремя") from exc
-        self.status = "verifying"
-        return code
+
+        deadline = time.time() + CODE_WAIT_TIMEOUT
+        while time.time() < deadline:
+            self._update_resend_available()
+            try:
+                action, payload = self._action_q.get(timeout=2.0)
+            except queue.Empty:
+                continue
+            if action == "code":
+                self.status = "verifying"
+                return payload
+            if action == "resend":
+                self._perform_resend()
+                deadline = time.time() + CODE_WAIT_TIMEOUT
+        raise RuntimeError("Код не был введён вовремя")
 
     def submit_code(self, code: str):
-        self._code_q.put(code)
+        self._action_q.put(("code", code))
+
+    def request_resend(self):
+        self._action_q.put(("resend", None))
 
 
 def _run_login(session: LoginSession):
@@ -361,7 +410,12 @@ async def api_login_status(device_id: str) -> dict:
     session = _login_sessions.get(device_id)
     if not session:
         return {"status": "idle"}
-    payload = {"status": session.status, "method": session.method, "target": session.target}
+    payload = {
+        "status": session.status,
+        "method": session.method,
+        "target": session.target,
+        "resend_available": session.resend_available,
+    }
     if session.status == "error":
         payload["error"] = session.error
     if session.status == "done" and session.device:
@@ -382,6 +436,17 @@ async def api_login_code(device_id: str, request: Request) -> dict:
 
     session.submit_code(code)
     return {"status": "verifying"}
+
+
+@api.post("/devices/{device_id}/login/resend")
+async def api_login_resend(device_id: str) -> dict:
+    session = _login_sessions.get(device_id)
+    if not session or session.status != "awaiting_code":
+        raise HTTPException(status_code=409, detail="Сейчас код не ожидается")
+    if not session.resend_available:
+        raise HTTPException(status_code=409, detail="Кнопка ещё не активна")
+    session.request_resend()
+    return {"status": "awaiting_code"}
 
 
 app.include_router(api)

@@ -258,6 +258,14 @@ body {
     -webkit-backdrop-filter: blur(14px);
 }
 
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.45;
+    filter: grayscale(0.4);
+    pointer-events: none;
+    cursor: default;
+}
+
 .btn--sm {
     min-height: 40px;
     font-size: 14px;

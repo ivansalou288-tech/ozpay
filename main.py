@@ -1378,11 +1378,13 @@ def add_device(device_name, number, password, code_provider=None, new_code_timeo
     else:
         log("Пропускаю 'Получить новый код' — использую код из первой отправки")
 
-    # 6) запросить код у пользователя (с подсказкой о типе доставки)
+    # 6) запросить код у пользователя (с подсказкой о типе доставки + доступом к
+    #    устройству, чтобы UI мог мониторить/нажимать 'Получить новый код')
     code_hint = detect_code_screen(device)
     log(f"Экран кода: {code_hint}")
+    code_context = {"hint": code_hint, "device": device}
     try:
-        raw_code = code_provider(code_hint)
+        raw_code = code_provider(code_context)
     except TypeError:
         raw_code = code_provider()
     code = re.sub(r"\D", "", str(raw_code))

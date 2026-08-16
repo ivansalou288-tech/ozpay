@@ -975,8 +975,10 @@ function handleLoginStatus(deviceId, data) {
                 loginShownStatus = 'awaiting_code';
                 haptic.notify('warning');
                 renderCodeForm(deviceId, data);
+            } else {
+                updateCodeForm(data);
             }
-            scheduleLoginPoll(deviceId, 3000);
+            scheduleLoginPoll(deviceId, 2500);
             break;
         case 'verifying':
             if (loginShownStatus !== 'verifying') {
@@ -1000,19 +1002,21 @@ function handleLoginStatus(deviceId, data) {
     }
 }
 
-function renderCodeForm(deviceId, info) {
+function codeHintText(info) {
     const target = info.target || '';
-    let hint;
     if (info.method === 'call') {
-        hint = `Вам поступает звонок${target ? ' на ' + target : ''}. Отвечать не нужно — введите последние 6 цифр входящего номера.`;
-    } else if (info.method === 'sms') {
-        hint = `Код отправлен по СМС${target ? ' на ' + target : ''}. Введите 6 цифр из сообщения.`;
-    } else {
-        hint = `Введите 6-значный код${target ? ', отправленный на ' + target : ''}.`;
+        return `Вам поступает звонок${target ? ' на ' + target : ''}. Отвечать не нужно — введите последние 6 цифр входящего номера.`;
     }
+    if (info.method === 'sms') {
+        return `Код отправлен по СМС${target ? ' на ' + target : ''}. Введите 6 цифр из сообщения.`;
+    }
+    return `Введите 6-значный код${target ? ', отправленный на ' + target : ''}.`;
+}
+
+function renderCodeForm(deviceId, info) {
     openSheet(`
         <h3 class="sheet__title">Подтверждение входа</h3>
-        <p class="sheet__sub">${hint}</p>
+        <p class="sheet__sub" id="codeHint">${codeHintText(info)}</p>
         <form class="form" id="codeForm" autocomplete="off">
             <label class="field">
                 <span class="field__label">Код *</span>
@@ -1020,17 +1024,56 @@ function renderCodeForm(deviceId, info) {
             </label>
             <div class="sheet__actions">
                 <button type="submit" class="btn btn--primary">Подтвердить</button>
+                <button type="button" class="btn btn--ghost" id="resendBtn" data-action="resend" disabled>Отправить код заново</button>
                 <button type="button" class="btn" data-action="cancel">Отмена</button>
             </div>
         </form>
     `);
     const form = document.getElementById('codeForm');
     form.addEventListener('submit', (event) => onCodeSubmit(event, deviceId));
+    form.elements.code.addEventListener('input', () => {
+        form.elements.code.value = form.elements.code.value.replace(/\D/g, '').slice(0, 6);
+    });
+    document.getElementById('resendBtn').addEventListener('click', () => onResend(deviceId));
     form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
         haptic.impact('light');
         closeSheet();
     });
+    updateCodeForm(info);
     setTimeout(() => form.elements.code.focus(), 80);
+}
+
+function updateCodeForm(info) {
+    const hintEl = document.getElementById('codeHint');
+    if (hintEl) hintEl.textContent = codeHintText(info);
+    const resendBtn = document.getElementById('resendBtn');
+    if (resendBtn && !resendBtn.dataset.sending) {
+        resendBtn.disabled = !info.resend_available;
+    }
+}
+
+async function onResend(deviceId) {
+    const btn = document.getElementById('resendBtn');
+    if (btn && btn.disabled) return;
+    if (btn) {
+        btn.dataset.sending = '1';
+        btn.disabled = true;
+        btn.textContent = 'Отправляю…';
+    }
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}/login/resend`, { method: 'POST' });
+        haptic.impact('medium');
+        showToast('Запросил новый код');
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось отправить');
+    } finally {
+        if (btn) {
+            delete btn.dataset.sending;
+            btn.textContent = 'Отправить код заново';
+            btn.disabled = true;
+        }
+    }
 }
 
 async function onCodeSubmit(event, deviceId) {
