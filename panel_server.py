@@ -21,7 +21,7 @@ from db_api import get_device, list_devices
 from main import check_balance, check_cards, check_turnover, full_check
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
-PORT = 8080
+PORT = 5001
 
 CHECKERS = {
     "balance": check_balance,
