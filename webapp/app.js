@@ -110,9 +110,11 @@ const STATUS_LABEL = {
 
 const API = 'https://api.ozpay.ru:5001/api';
 const devices = [];
-const checkingByDevice = new Map();
+const localChecks = new Map();
+const serverBusy = new Set();
 
 let activeFilter = 'all';
+let pollTimer = null;
 
 async function api(path, options = {}) {
     const response = await fetch(API + path, {
@@ -138,8 +140,14 @@ async function api(path, options = {}) {
     return payload;
 }
 
+function checkingField(deviceId) {
+    if (localChecks.has(deviceId)) return localChecks.get(deviceId);
+    if (serverBusy.has(deviceId)) return 'all';
+    return null;
+}
+
 function isChecking(deviceId, field) {
-    const current = checkingByDevice.get(deviceId);
+    const current = checkingField(deviceId);
     if (!current) return false;
     return field ? current === field || current === 'all' : true;
 }
@@ -149,16 +157,82 @@ function checkingClass(deviceId) {
 }
 
 function loadingClass(deviceId, field) {
-    const current = checkingByDevice.get(deviceId);
+    const current = checkingField(deviceId);
     if (!current) return '';
     if (current === 'all' || current === field) return ' is-loading';
     return '';
 }
 
 function busyClass(deviceId, field) {
-    const current = checkingByDevice.get(deviceId);
+    const current = checkingField(deviceId);
     if (current === field || current === 'all') return ' is-busy';
     return '';
+}
+
+function deviceIsBusy(item) {
+    return Boolean(item && (item.checking || item.status === 'busy'));
+}
+
+function normalizeDevice(item) {
+    return {
+        ...item,
+        cards: Array.isArray(item.cards) ? item.cards : [],
+    };
+}
+
+function syncServerBusy(list) {
+    serverBusy.clear();
+    list.forEach((item) => {
+        if (deviceIsBusy(item)) serverBusy.add(item.id);
+    });
+}
+
+function stopPolling() {
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+}
+
+function startPollingIfNeeded() {
+    if (serverBusy.size === 0) {
+        stopPolling();
+        return;
+    }
+    if (pollTimer) return;
+    pollTimer = setInterval(pollBusyDevices, 2000);
+}
+
+function refreshAll() {
+    if (deviceScreen.classList.contains('screen--active')) {
+        const detail = deviceScreen.querySelector('.detail');
+        const id = detail && detail.dataset.id;
+        const device = id && devices.find((item) => item.id === id);
+        if (device) deviceScreen.innerHTML = renderDeviceScreen(device);
+    }
+    if (listScreen.classList.contains('screen--active')) {
+        renderDevices();
+    }
+}
+
+async function pollBusyDevices() {
+    if (serverBusy.size === 0) {
+        stopPolling();
+        return;
+    }
+    try {
+        const data = await api('/devices');
+        if (!Array.isArray(data.devices)) return;
+        const wasBusy = new Set(serverBusy);
+        data.devices.forEach((item) => upsertDevice(normalizeDevice(item)));
+        syncServerBusy(data.devices);
+        const finished = [...wasBusy].filter((id) => !serverBusy.has(id) && !localChecks.has(id));
+        refreshAll();
+        if (finished.length) haptic.notify('success');
+    } catch (error) {
+        /* оставляем блокировку, пока сервер занят */
+    }
+    if (serverBusy.size === 0) stopPolling();
 }
 
 function upsertDevice(updated) {
@@ -172,11 +246,10 @@ async function loadDevices() {
     if (!Array.isArray(data.devices)) {
         throw new Error('API не вернул список девайсов');
     }
-    devices.splice(0, devices.length, ...data.devices.map((item) => ({
-        ...item,
-        cards: Array.isArray(item.cards) ? item.cards : [],
-    })));
+    devices.splice(0, devices.length, ...data.devices.map(normalizeDevice));
+    syncServerBusy(data.devices);
     renderDevices();
+    startPollingIfNeeded();
 }
 
 const moneyFormat = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
@@ -217,7 +290,11 @@ const LOAD_ICON = `
 const deviceList = document.getElementById('deviceList');
 
 function renderDevices() {
-    const visible = devices.filter((d) => activeFilter === 'all' || d.status === activeFilter);
+    const visible = devices.filter((d) => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'online') return d.status === 'online' || isChecking(d.id);
+        return d.status === activeFilter;
+    });
     document.getElementById('deviceCount').textContent = visible.length;
 
     if (!devices.length) {
@@ -400,25 +477,31 @@ async function checkDevice(rootEl, field) {
     const deviceId = rootEl.dataset.id;
     const device = devices.find((d) => d.id === deviceId);
     if (!device) return;
-    if (checkingByDevice.has(deviceId)) return;
+    if (isChecking(deviceId)) return;
 
-    checkingByDevice.set(deviceId, field);
+    localChecks.set(deviceId, field);
     refreshView(deviceId);
     haptic.impact('medium');
 
     try {
         const data = await api(`/devices/${encodeURIComponent(deviceId)}/check/${field}`, { method: 'POST' });
         if (!data.device) throw new Error('API не вернул девайс');
-        upsertDevice({
-            ...data.device,
-            cards: Array.isArray(data.device.cards) ? data.device.cards : [],
-        });
+        upsertDevice(normalizeDevice(data.device));
+        if (!deviceIsBusy(data.device)) serverBusy.delete(deviceId);
         haptic.notify('success');
     } catch (error) {
-        haptic.notify('error');
-        showToast(error.message || 'Не удалось обновить');
-    } finally {
-        checkingByDevice.delete(deviceId);
+        if (String(error.message || '').includes('уже проверяется')) {
+            serverBusy.add(deviceId);
+            startPollingIfNeeded();
+        } else {
+            haptic.notify('error');
+            showToast(error.message || 'Не удалось обновить');
+        } finally {
+        localChecks.delete(deviceId);
+        if (deviceIsBusy(devices.find((item) => item.id === deviceId))) {
+            serverBusy.add(deviceId);
+            startPollingIfNeeded();
+        }
         refreshView(deviceId);
     }
 }

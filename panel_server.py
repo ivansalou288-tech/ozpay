@@ -127,6 +127,7 @@ def serialize_device(row: dict) -> dict:
         "name": row.get("name") or device_id,
         "number": row.get("number") or "",
         "status": status,
+        "checking": device_id in _checking,
         "balance": _to_number(row.get("balance")),
         "income": _to_number(row.get("income")),
         "outcome": _to_number(row.get("outcome")),
@@ -191,16 +192,20 @@ async def api_check_device(device_id: str, kind: str) -> dict:
         raise HTTPException(status_code=400, detail="Неизвестный тип проверки")
 
     _require_device(device_id)
-    lock = _lock_for(device_id)
+    if device_id in _checking:
+        raise HTTPException(status_code=409, detail="Девайс уже проверяется")
 
-    async with lock:
-        _checking.add(device_id)
-        try:
+    _checking.add(device_id)
+    lock = _lock_for(device_id)
+    try:
+        async with lock:
             await asyncio.to_thread(CHECKERS[kind], device_id)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
-        finally:
-            _checking.discard(device_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        _checking.discard(device_id)
 
     return {"device": serialize_device(_require_device(device_id))}
 
