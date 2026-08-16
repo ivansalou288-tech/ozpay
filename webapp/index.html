@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0616">
+    <title>OZPAY Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?58"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--one"></div>
+    <div class="bg-glow bg-glow--two"></div>
+
+    <div class="app">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand__mark">OZ</span>
+                <span class="brand__name">OZPAY</span>
+                <span class="brand__divider"></span>
+                <span class="brand__sub">PANEL</span>
+            </div>
+        </header>
+
+        <main class="screens">
+            <section class="screen screen--active" id="listScreen">
+                <div class="actions">
+                    <button class="btn btn--ghost" id="addDeviceBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        Добавить девайс
+                    </button>
+                    <button class="btn btn--ghost icon-only" id="statsBtn" aria-label="Статистика">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M3 17l5-6 4 4 5-8 4 5"></path>
+                        </svg>
+                    </button>
+                    <button class="btn btn--ghost icon-only" id="settingsBtn" aria-label="Настройки">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="3.2"></circle>
+                            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.11-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.1a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 .9z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="chips" id="filterChips">
+                    <button class="chip chip--active" data-filter="all">Все</button>
+                    <button class="chip" data-filter="online">Доступные</button>
+                </div>
+
+                <div class="section-head">
+                    <h2 class="section-title">Девайсы</h2>
+                    <span class="section-count" id="deviceCount">0</span>
+                </div>
+
+                <div class="device-list" id="deviceList"></div>
+
+                <button class="slot-add" id="slotAdd">
+                    <span class="slot-add__plus">+</span>
+                    <span class="slot-add__text">Свободный слот — подключить девайс</span>
+                </button>
+            </section>
+
+            <section class="screen" id="deviceScreen"></section>
+        </main>
+    </div>
+
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="sheet" id="sheet">
+        <div class="sheet__grabber"></div>
+        <div class="sheet__content" id="sheetContent"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
