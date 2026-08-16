@@ -19,8 +19,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
-from db_api import create_device, get_device, list_devices
-from main import check_balance, check_cards, check_turnover, full_check
+from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices
+from main import check_balance, check_cards, check_turnover, full_check, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
 PORT = 5001
@@ -161,7 +161,7 @@ async def log_requests(request: Request, call_next):
             status_code=204,
             headers={
                 "Access-Control-Allow-Origin": origin,
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
                 "Access-Control-Allow-Headers": "Accept, Content-Type",
                 "Access-Control-Max-Age": "86400",
                 "Vary": "Origin",
@@ -170,7 +170,7 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     origin = request.headers.get("origin")
     response.headers["Access-Control-Allow-Origin"] = origin or "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Accept, Content-Type"
     response.headers["Vary"] = "Origin"
     print(f"{request.method} {request.url.path} -> {response.status_code}")
@@ -200,15 +200,29 @@ async def api_create_device(request: Request) -> dict:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", device_id):
         raise HTTPException(status_code=400, detail="Имя девайса: латиница, цифры, . _ -")
 
-    ip = (str(body.get("ip") or "")).replace(",", ".").strip() or None
+    ip = (str(body.get("ip") or "")).replace(",", ".").strip()
+    if not ip:
+        raise HTTPException(status_code=400, detail="Укажите IP")
 
     port_raw = body.get("port")
-    port = None
-    if port_raw not in (None, ""):
-        try:
-            port = int(str(port_raw).strip())
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail="Порт должен быть числом")
+    if port_raw in (None, ""):
+        raise HTTPException(status_code=400, detail="Укажите порт")
+    try:
+        port = int(str(port_raw).strip())
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Порт должен быть числом")
+
+    duplicate = find_device_by_ip_port(ip, port)
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=f"IP {ip}:{port} уже занят девайсом '{duplicate.get('device')}'",
+        )
+
+    try:
+        await asyncio.to_thread(probe_adb, ip, port)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
         create_device(device_id, ip=ip, port=port)
@@ -223,6 +237,16 @@ async def api_create_device(request: Request) -> dict:
 @api.get("/devices/{device_id}")
 async def api_get_device(device_id: str) -> dict:
     return {"device": serialize_device(_require_device(device_id))}
+
+
+@api.delete("/devices/{device_id}")
+async def api_delete_device(device_id: str) -> dict:
+    _require_device(device_id)
+    if device_id in _checking:
+        raise HTTPException(status_code=409, detail="Дождитесь окончания проверки")
+    if not delete_device(device_id):
+        raise HTTPException(status_code=500, detail="Не удалось удалить девайс")
+    return {"ok": True, "id": device_id}
 
 
 @api.post("/devices/{device_id}/check/{kind}")

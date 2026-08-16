@@ -176,6 +176,10 @@ body {
     animation: spin 0.7s linear;
 }
 
+.icon-btn--danger {
+    color: #f87171;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -240,6 +244,12 @@ body {
     border-color: transparent;
     background: linear-gradient(135deg, #7c3aed, #a855f7 55%, #d946ef);
     box-shadow: 0 8px 26px rgba(124, 58, 237, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn--danger {
+    border-color: transparent;
+    background: rgba(239, 68, 68, 0.92);
+    box-shadow: 0 8px 26px rgba(239, 68, 68, 0.35);
 }
 
 .btn--ghost {

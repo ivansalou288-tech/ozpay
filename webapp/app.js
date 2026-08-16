@@ -416,6 +416,15 @@ function renderDeviceSpecs(device) {
     `;
 }
 
+const TRASH_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16"></path>
+        <path d="M9 7V5h6v2"></path>
+        <path d="M9 11v7M12 11v7M15 11v7"></path>
+        <path d="M6 7l1 13h10l1-13"></path>
+    </svg>
+`;
+
 function renderNewDeviceScreen(device) {
     return `
         <div class="detail device--${device.status}" data-id="${device.id}">
@@ -427,6 +436,7 @@ function renderNewDeviceScreen(device) {
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status}
                     </span>
                 </div>
+                <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
             </div>
             ${renderDeviceSpecs(device)}
             <div class="login-state">
@@ -456,6 +466,7 @@ function renderDeviceScreen(device) {
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
+                <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
                 <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
 
@@ -524,6 +535,45 @@ function closeDevice() {
     if (tg && tg.BackButton) {
         tg.BackButton.hide();
         tg.BackButton.offClick(closeDevice);
+    }
+}
+
+function askDeleteDevice(deviceId) {
+    const device = devices.find((item) => item.id === deviceId);
+    const label = device ? deviceLabel(device) : deviceId;
+    haptic.impact('medium');
+    openSheet(`
+        <h3 class="sheet__title">Удалить девайс</h3>
+        <p class="sheet__sub">${label} будет удалён из базы. Это нельзя отменить.</p>
+        <div class="sheet__actions">
+            <button type="button" class="btn btn--danger" data-action="confirm-delete">Удалить</button>
+            <button type="button" class="btn" data-action="cancel">Отмена</button>
+        </div>
+    `);
+    sheetContent.querySelector('[data-action="confirm-delete"]').addEventListener('click', () => {
+        closeSheet();
+        removeDevice(deviceId);
+    });
+    sheetContent.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+}
+
+async function removeDevice(deviceId) {
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' });
+        const index = devices.findIndex((item) => item.id === deviceId);
+        if (index >= 0) devices.splice(index, 1);
+        localChecks.delete(deviceId);
+        serverBusy.delete(deviceId);
+        haptic.notify('success');
+        closeDevice();
+        renderDevices();
+        showToast('Девайс удалён');
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось удалить');
     }
 }
 
@@ -660,6 +710,11 @@ deviceScreen.addEventListener('click', (event) => {
         return;
     }
 
+    if (event.target.closest('[data-action="delete"]')) {
+        askDeleteDevice(detail.dataset.id);
+        return;
+    }
+
     const loadBtn = event.target.closest('.load-btn');
     if (loadBtn) {
         checkDevice(detail, loadBtn.dataset.check);
@@ -707,12 +762,12 @@ function openAddSheet() {
                 <input class="field__input" name="device" placeholder="device1 или redroid00" required>
             </label>
             <label class="field">
-                <span class="field__label">IP</span>
-                <input class="field__input" name="ip" placeholder="192.168.0.10" inputmode="decimal">
+                <span class="field__label">IP *</span>
+                <input class="field__input" name="ip" placeholder="192.168.0.10" inputmode="decimal" required>
             </label>
             <label class="field">
-                <span class="field__label">Порт</span>
-                <input class="field__input" name="port" placeholder="5555" inputmode="numeric">
+                <span class="field__label">Порт *</span>
+                <input class="field__input" name="port" placeholder="5555" inputmode="numeric" required>
             </label>
             <div class="sheet__actions">
                 <button type="submit" class="btn btn--primary">Сохранить</button>
@@ -746,9 +801,13 @@ async function onAddSubmit(event) {
         ip: form.elements.ip.value.replace(/,/g, '.').trim(),
         port: form.elements.port.value.trim(),
     };
+    if (!payload.ip || !payload.port) {
+        showToast('Укажите IP и порт');
+        return;
+    }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Сохраняю…';
+    submitBtn.textContent = 'Проверяю ADB…';
     try {
         const data = await api('/devices', {
             method: 'POST',

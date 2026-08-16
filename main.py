@@ -69,6 +69,59 @@ def connect_redroid(device_name: str, adb_host: str = ADB_HOST, adb_port: int = 
     return device
 
 
+def probe_adb(host: str, port: int, adb_host: str = ADB_HOST, adb_port: int = ADB_PORT):
+    """Проверить, что host:port доступен через ADB. Без записи в БД."""
+    import socket
+
+    host = (host or "").strip()
+    try:
+        port = int(port)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("Порт должен быть числом") from exc
+    if not host:
+        raise RuntimeError("Укажите IP")
+
+    serial = f"{host}:{port}"
+    client = AdbClient(host=adb_host, port=adb_port)
+
+    try:
+        for device in client.devices():
+            if device.serial == serial:
+                device.shell("echo ok")
+                return True
+    except Exception:
+        pass
+
+    try:
+        with socket.create_connection((host, port), timeout=3):
+            pass
+    except Exception as exc:
+        raise RuntimeError(f"Не удалось подключиться к {serial}: {exc}") from exc
+
+    try:
+        client.remote_connect(host, port)
+    except Exception as exc:
+        raise RuntimeError(f"ADB connect к {serial} не удался: {exc}") from exc
+
+    device = client.device(serial)
+    if device is None:
+        connected = []
+        try:
+            connected = [item.serial for item in client.devices()]
+        except Exception:
+            pass
+        raise RuntimeError(
+            f"Не удалось подключиться к {serial}. "
+            f"Подключенные устройства: {connected}"
+        )
+
+    try:
+        device.shell("echo ok")
+    except Exception as exc:
+        raise RuntimeError(f"ADB на {serial} не отвечает: {exc}") from exc
+    return True
+
+
 def dump_ui_xml(device, local_path: Path = DUMP_PATH) -> Path:
     """Получить XML-дамп UI hierarchy с устройства и сохранить локально."""
     remote_path = "/sdcard/ui.xml"

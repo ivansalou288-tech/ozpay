@@ -2,6 +2,7 @@
 import sqlite3
 from flask import Flask, request, jsonify
 from pathlib import Path
+from typing import Optional
 
 # Use a workspace-relative absolute path so code always opens the same DB,
 # even if the current working directory changes at runtime.
@@ -80,6 +81,33 @@ def create_device(device: str, **fields):
 	)
 	conn.commit()
 	conn.close()
+
+
+def find_device_by_ip_port(ip: str, port) -> Optional[dict]:
+	if not ip or port in (None, ""):
+		return None
+	try:
+		port = int(port)
+	except (TypeError, ValueError):
+		return None
+	conn = get_conn()
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM accounts WHERE ip = ? AND port = ?", (ip, port))
+	row = cur.fetchone()
+	conn.close()
+	if not row:
+		return None
+	return dict(row)
+
+
+def delete_device(device: str) -> bool:
+	conn = get_conn()
+	cur = conn.cursor()
+	cur.execute("DELETE FROM accounts WHERE device = ?", (device,))
+	conn.commit()
+	changed = cur.rowcount
+	conn.close()
+	return changed > 0
 
 
 def get_device(device: str):
