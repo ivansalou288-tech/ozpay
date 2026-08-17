@@ -902,7 +902,9 @@ def find_card_buttons(root):
         if center:
             # parse_bounds returns a dict with keys including 'center' and 'top_center'
             coord = center.get("center") if isinstance(center, dict) else center
-            if coord:
+            # Отсеиваем карты вне экрана: у них bounds=[0,0][0,0] (center ~ 0,0),
+            # либо они частично видны у левого края и не тапаются надёжно.
+            if coord and coord[0] > 24 and coord[1] > 24:
                 buttons.append({"label": label, "center": coord})
     seen = set()
     unique = []
@@ -1001,19 +1003,91 @@ def scroll_until_requisites(device, start_y: int = 900, end_y: int = 300, steps:
     return False
 
 
-def parse_all_cards(device, max_cards: int = 20):
-    """По порядку открывает каждую карту, доходит до реквизитов, нажимает Показать и парсит данные."""
-    if not screen_has_card_list(device):
-        return []
+def _open_and_parse_card(device, center, label, attempts: int = 4):
+    """Открывает карту из карусели, доходит до реквизитов, жмёт Показать и парсит.
 
-    total_cards = count_open_cards(device)
-    limit = min(max_cards, total_cards) if total_cards else 0
-    if limit == 0:
+    Детальный экран может открыться не с первого тапа, кнопка «Показать» иногда
+    ещё не размечена (bounds=[0,0]), а номер/срок/CVV появляются не мгновенно и
+    могут снова скрыться. Поэтому делаем несколько попыток и быстро опрашиваем дамп
+    сразу после нажатия «Показать».
+    """
+    found_last4 = re.search(r"(?:Bank\s+Card\s+|Карта\s+)?(\d{4})\b", label, flags=re.IGNORECASE)
+    last4 = found_last4.group(1) if found_last4 else None
+
+    best = parse_card_data("")
+
+    def _complete(parsed):
+        return parsed["card_number"] and parsed["expiry"] and parsed["cvv"]
+
+    for _ in range(attempts):
+        try:
+            root = get_dump_root(dump_ui_xml(device))
+        except ET.ParseError:
+            root = None
+
+        # Если всё ещё открыт список карт (деталь не открылась) — тапаем по карте.
+        if root is None or len(find_card_buttons(root)) >= 2:
+            tap_screen_point(device, *center)
+            time.sleep(1.5)
+            try:
+                root = get_dump_root(dump_ui_xml(device))
+            except ET.ParseError:
+                root = None
+
+        # Ищем кнопку «Показать»; если её нет/не размечена — подкручиваем к реквизитам.
+        show_btn = find_button_by_label(root, r"Показать|Show") if root is not None else None
+        if not show_btn:
+            scroll_until_requisites(device, steps=6)
+            try:
+                root = get_dump_root(dump_ui_xml(device))
+            except ET.ParseError:
+                root = None
+            show_btn = find_button_by_label(root, r"Показать|Show") if root is not None else None
+
+        if show_btn:
+            tap_screen_point(device, *show_btn["center"])
+            time.sleep(1.0)
+
+        # Номер появляется не сразу и может снова скрыться — быстро опрашиваем дамп.
+        for _ in range(4):
+            candidate = parse_card_data(read_dump_text(dump_ui_xml(device)))
+            if last4 and not candidate["card_last4"]:
+                candidate["card_last4"] = last4
+            if _card_fill_score(candidate) > _card_fill_score(best):
+                best = candidate
+            if _complete(best):
+                break
+            time.sleep(0.8)
+
+        if _complete(best):
+            break
+
+    if last4 and not best["card_last4"]:
+        best["card_last4"] = last4
+    return best
+
+
+def _card_fill_score(parsed):
+    """Кол-во заполненных ключевых полей карты — для выбора лучшей попытки."""
+    return sum(1 for key in ("card_number", "expiry", "cvv") if parsed.get(key))
+
+
+def parse_all_cards(device, max_cards: int = 20):
+    """По порядку открывает каждую карту, доходит до реквизитов, нажимает Показать и парсит данные.
+
+    Список карт — горизонтальная карусель. Карты вне экрана имеют bounds=[0,0][0,0],
+    поэтому идём не по индексу, а по label с дедупликацией и горизонтальным скроллом,
+    чтобы добраться до всех карт (в т.ч. когда их больше, чем помещается на экране).
+    """
+    if not screen_has_card_list(device):
         return []
 
     results = []
     seen = set()
-    for index in range(limit):
+    last_signature = None
+    stagnant = 0
+
+    while len(results) < max_cards:
         dump_path = dump_ui_xml(device)
         try:
             root = get_dump_root(dump_path)
@@ -1021,38 +1095,30 @@ def parse_all_cards(device, max_cards: int = 20):
             break
 
         cards = find_card_buttons(root)
-        if index >= len(cards):
-            break
+        signature = tuple(card["label"] for card in cards)
+        target = next((card for card in cards if card["label"] not in seen), None)
 
-        card = cards[index]
-        label = card["label"]
+        if target is None:
+            # Все видимые карты обработаны — скроллим карусель, чтобы показать остальные.
+            if signature == last_signature:
+                stagnant += 1
+            else:
+                stagnant = 0
+            last_signature = signature
+            if stagnant >= 2:
+                break
+            device.shell("input swipe 600 392 150 392 500")
+            time.sleep(1.0)
+            continue
 
-        tap_screen_point(device, *card["center"])
-        time.sleep(1.2)
+        last_signature = None
+        stagnant = 0
+        label = target["label"]
+        seen.add(label)
 
-        scroll_until_requisites(device)
-
-        detail_path = dump_ui_xml(device)
-        detail_root = get_dump_root(detail_path)
-        show_btn = find_button_by_label(detail_root, r"Показать|Show")
-        if show_btn:
-            tap_screen_point(device, *show_btn["center"])
-            time.sleep(1.2)
-
-        detail_text = read_dump_text(dump_ui_xml(device))
-        parsed = parse_card_data(detail_text)
-
-        found_last4 = re.search(r"(?:Bank\s+Card\s+|Карта\s+)?(\d{4})\b", label, flags=re.IGNORECASE)
-        if found_last4:
-            parsed["card_last4"] = found_last4.group(1)
+        parsed = _open_and_parse_card(device, target["center"], label)
 
         if parsed["card_number"] or parsed["card_last4"] or parsed["expiry"] or parsed["cvv"]:
-            fingerprint = parsed["card_number"] or parsed["card_last4"] or parsed["expiry"] or parsed["cvv"]
-            if fingerprint in seen:
-                press_back(device)
-                time.sleep(1.0)
-                continue
-            seen.add(fingerprint)
             parsed["card_label"] = label
             results.append(parsed)
 
@@ -1627,10 +1693,13 @@ def full_check(device_name):
 
         Each card is stored as: full_number/expiry(without "/")/cvv
         Multiple cards are separated by ':'
+        Карты без номера пропускаем, чтобы не появлялись пустые записи вида '//'.
         """
         out = []
         for c in (cards_list or []):
             num = c.get("card_number") or ""
+            if not num:
+                continue
             expiry = (c.get("expiry") or "").replace("/", "")
             cvv = c.get("cvv") or ""
             out.append(f"{num}/{expiry}/{cvv}")
@@ -2006,10 +2075,13 @@ def check_cards(device_name):
 
         Each card is stored as: full_number/expiry(without "/")/cvv
         Multiple cards are separated by ':'
+        Карты без номера пропускаем, чтобы не появлялись пустые записи вида '//'.
         """
         out = []
         for c in (cards_list or []):
             num = c.get("card_number") or ""
+            if not num:
+                continue
             expiry = (c.get("expiry") or "").replace("/", "")
             cvv = c.get("cvv") or ""
             out.append(f"{num}/{expiry}/{cvv}")
