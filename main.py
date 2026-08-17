@@ -1833,44 +1833,42 @@ def logout_lk(device_name: str) -> bool:
 
     deadline = time.time() + 20.0
     while time.time() < deadline:
-        if is_on_login_screen(device):
-            log(f"logout_lk: экран входа подтверждён для {device_name}")
-            clear_lk_session(device_name)
-            return True
         try:
             dump = get_dump_text(device)
         except Exception:
             dump = ""
+
         if re.search(r"не в этот раз", dump, flags=re.IGNORECASE):
             scroll_and_tap(device, ["Не в этот раз"], exact=True, max_swipes=1)
             time.sleep(1.2)
             continue
-        if re.search(r"выйти из (аккаунта|профиля)|подтверд", dump, flags=re.IGNORECASE):
-            scroll_and_tap(device, ["Выйти из аккаунта", "Выйти", "Подтвердить"], exact=True, max_swipes=1)
-            time.sleep(1.5)
-            continue
-        time.sleep(1.0)
 
-    logout_tapped = scroll_and_tap(
-        device,
-        ["Выйти из аккаунта", "Выйти из профиля", "Выйти"],
-        exact=True,
-        max_swipes=4,
-    )
-    if not logout_tapped:
-        raise RuntimeError("Не найдена кнопка «Выйти» в ЛК")
-    time.sleep(1.2)
+        if re.search(
+            r"войти\s+(ли\s+)?в\s+эт(от|ом)\s+аккаунт|продолжить\s+как|это ваш аккаунт",
+            dump,
+            flags=re.IGNORECASE,
+        ) or re.search(r"выбрать другой", dump, flags=re.IGNORECASE):
+            log("logout_lk: экран повторного входа — нажимаю «Выбрать другой»")
+            tapped_other = (
+                scroll_and_tap(
+                    device,
+                    ["Выбрать другой", "Выбрать другой аккаунт", "Другой аккаунт"],
+                    exact=True,
+                    max_swipes=2,
+                )
+                or find_and_tap_ui_element(device, r"Выбрать другой")
+            )
+            if tapped_other:
+                time.sleep(1.0)
+            log(f"logout_lk: выход успешен для {device_name}")
+            clear_lk_session(device_name)
+            return True
 
-    deadline = time.time() + 20.0
-    while time.time() < deadline:
         if is_on_login_screen(device):
             log(f"logout_lk: экран входа подтверждён для {device_name}")
             clear_lk_session(device_name)
             return True
-        try:
-            dump = get_dump_text(device)
-        except Exception:
-            dump = ""
+
         if re.search(r"выйти из (аккаунта|профиля)|подтверд", dump, flags=re.IGNORECASE):
             scroll_and_tap(device, ["Выйти из аккаунта", "Выйти", "Подтвердить"], exact=True, max_swipes=1)
             time.sleep(1.5)
