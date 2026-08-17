@@ -14,6 +14,8 @@ REDROID_HOST = "153.80.251.46"
 REDROID_PORT = 4567
 ADB_HOST = "127.0.0.1"
 ADB_PORT = 5037
+OZON_PACKAGE = "ru.ozon.fintech.finance"
+OZON_ACTIVITY = f"{OZON_PACKAGE}/ru.ozon.fintech.features.tabber.presentation.finance.FinanceActivity"
 DUMP_PATH = Path("ui_dump.xml")
 
 
@@ -1405,34 +1407,72 @@ def detect_code_screen(device):
     return {"method": method or "code", "target": target}
 
 
+def get_foreground_package(device) -> str:
+    """Возвращает package приложения на переднем плане (или '')."""
+    try:
+        out = device.shell("dumpsys window") or ""
+    except Exception:
+        return ""
+    for match in re.finditer(r"mCurrentFocus=Window\{[^}]*\s+([\w.]+)/", out):
+        return match.group(1)
+    match = re.search(r"mFocusedApp=.*\s+([\w.]+)/", out)
+    return match.group(1) if match else ""
+
+
+def ensure_ozon_foreground(device, wait: float = 6.0) -> bool:
+    """Гарантирует, что приложение Ozon на переднем плане.
+
+    Если открыт лаунчер/другое приложение, экран Ozon прочитать нельзя, и проверка
+    состояния входа ложно показывает «вход не выполнен». Поэтому поднимаем приложение.
+    """
+    if get_foreground_package(device) == OZON_PACKAGE:
+        return True
+    try:
+        device.shell(f"am start -n {OZON_ACTIVITY}")
+    except Exception as exc:
+        log(f"ensure_ozon_foreground: am start failed: {exc}")
+    time.sleep(wait)
+    return get_foreground_package(device) == OZON_PACKAGE
+
+
 def check_login_state(device_name):
     """Проверяет текущий экран устройства и определяет, выполнен ли вход в ЛК.
 
     Вход считается выполненным, если открыт экран ввода код-пароля (PIN) либо
     главный экран приложения. Возвращает {'logged_in': bool, 'screen': str}.
+
+    Перед чтением экрана поднимаем приложение Ozon на передний план: если оно
+    свёрнуто (открыт лаунчер/другое приложение), экран прочитать нельзя и вход
+    ложно определялся как невыполненный.
     """
     device = connect_redroid(device_name=device_name)
-    try:
-        dump = get_dump_text(device)
-    except Exception:
-        dump = ""
+    ensure_ozon_foreground(device)
 
-    if is_lock_screen_text(dump):
-        return {"logged_in": True, "screen": "pin"}
+    for _ in range(3):
+        try:
+            dump = get_dump_text(device)
+        except Exception:
+            dump = ""
 
-    if re.search(
-        r"\bГлавная\b|Основной\s+сч[её]т|Баланс|Остаток|Доходы|Расходы|Операции|Оплатить|Пополнить|Перевести",
-        dump,
-        flags=re.IGNORECASE,
-    ):
-        return {"logged_in": True, "screen": "main"}
+        if is_lock_screen_text(dump):
+            return {"logged_in": True, "screen": "pin"}
 
-    if re.search(
-        r"Введите\s+номер\s+телефона|Введите\s+код|последн\w*\s+6\s+цифр|Войти\s+по\s+почте",
-        dump,
-        flags=re.IGNORECASE,
-    ):
-        return {"logged_in": False, "screen": "login"}
+        if re.search(
+            r"\bГлавная\b|Основной\s+сч[её]т|Баланс|Остаток|Доходы|Расходы|Операции|Оплатить|Пополнить|Перевести",
+            dump,
+            flags=re.IGNORECASE,
+        ):
+            return {"logged_in": True, "screen": "main"}
+
+        if re.search(
+            r"Введите\s+номер\s+телефона|Введите\s+код|последн\w*\s+6\s+цифр|Войти\s+по\s+почте",
+            dump,
+            flags=re.IGNORECASE,
+        ):
+            return {"logged_in": False, "screen": "login"}
+
+        # Экран ещё не отрисован (сплэш/загрузка) — ждём и пробуем снова.
+        time.sleep(2.0)
 
     return {"logged_in": False, "screen": "unknown"}
 
