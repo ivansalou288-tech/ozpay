@@ -28,10 +28,15 @@ def get_conn():
 			balance REAL,
 			income REAL,
 			outcome REAL,
-			cards TEXT
+			cards TEXT,
+			blocked INTEGER DEFAULT 0
 		)
 		"""
 	)
+	cur.execute("PRAGMA table_info(accounts)")
+	cols = {row[1] for row in cur.fetchall()}
+	if "blocked" not in cols:
+		cur.execute("ALTER TABLE accounts ADD COLUMN blocked INTEGER DEFAULT 0")
 	conn.commit()
 	return conn
 
@@ -132,7 +137,7 @@ def list_devices():
 
 def update_device(device: str, data: dict) -> bool:
 	"""Generic update by device. `data` keys should be column names."""
-	allowed = ['ip', 'port', 'number', 'password', 'name', 'balance', 'income', 'outcome', 'cards']
+	allowed = ['ip', 'port', 'number', 'password', 'name', 'balance', 'income', 'outcome', 'cards', 'blocked']
 	set_parts = []
 	params = []
 	for k, v in data.items():
@@ -253,6 +258,15 @@ def get_cards(device: str):
 
 def update_cards(device: str, cards: str) -> bool:
 	return _update_field(device, 'cards', cards)
+
+
+# blocked (Ozon operations suspended)
+def get_blocked(device: str):
+	return _get_field(device, 'blocked')
+
+
+def update_blocked(device: str, blocked: int) -> bool:
+	return _update_field(device, 'blocked', int(bool(blocked)))
 
 
 # password

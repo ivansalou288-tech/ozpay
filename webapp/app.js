@@ -114,6 +114,7 @@ const STATUS_LABEL = {
     busy: 'В работе',
     offline: 'Офлайн',
     new: 'Не подключён',
+    blocked: 'Ozon блок',
 };
 
 const API = 'https://api.ozpay.ru:5001/api';
@@ -329,6 +330,7 @@ function renderDevice(device, index = 0) {
                         ${device.number}
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
+                    ${device.blocked ? '<span class="device__block">Ozon: операции приостановлены</span>' : ''}
                 </div>
                 <button class="load-btn${busyClass(id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
@@ -511,6 +513,7 @@ function renderDeviceScreen(device) {
             </div>
 
             ${renderDeviceSpecs(device)}
+            ${device.blocked ? '<div class="block-banner">Ozon заблокирован: операции приостановлены</div>' : ''}
 
             <div class="tile detail__balance${loadingClass(device.id, 'balance')}" data-field="balance">
                 <button class="load-btn load-btn--sm${busyClass(device.id, 'balance')}" data-check="balance" aria-label="Обновить баланс">${LOAD_ICON}</button>

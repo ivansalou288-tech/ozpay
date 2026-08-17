@@ -748,6 +748,34 @@ def extract_account_owner_name(text: str):
     return None
 
 
+OZON_BLOCK_PATTERNS = (
+    r"операци\w*\s+приостановлен",
+    r"причины и как исправить",
+    r"сч[её]т\s+заблокирован",
+    r"аккаунт\s+заблокирован",
+    r"карт[аыу]\s+заблокирован",
+)
+
+
+def is_ozon_blocked_text(dump_text: str) -> bool:
+    """Блок Ozon по фразам с экрана, например 'Операции приостановлены'."""
+    text = (dump_text or "").lower().replace("\xa0", " ").replace("\u202f", " ")
+    if not text.strip():
+        return False
+    return any(re.search(pattern, text) for pattern in OZON_BLOCK_PATTERNS)
+
+
+def sync_ozon_blocked(device_name: str, dump_text: str):
+    """Сохранить в БД, заблокирован ли Ozon. Пустой дамп и экран PIN не трогаем."""
+    if not (dump_text or "").strip() or is_lock_screen_text(dump_text):
+        return None
+    blocked = is_ozon_blocked_text(dump_text)
+    update_blocked(device_name, 1 if blocked else 0)
+    if blocked:
+        log(f"Ozon blocked for {device_name}: операции приостановлены")
+    return blocked
+
+
 def parse_balance_and_account_name(text: str):
     """Парсит баланс и имя аккаунта. Если данных нет — возвращает None."""
     account_name = extract_account_owner_name(text)
@@ -1526,6 +1554,7 @@ def full_check(device_name):
     account_balance_info = parse_balance_and_account_name(main_dump)
     results["account_name"] = account_balance_info.get("account_name")
     results["balance"] = account_balance_info.get("balance")
+    results["blocked"] = sync_ozon_blocked(device_name, main_dump)
 
     # Try to open account details by tapping the account name if available
     account_name = results["account_name"] or ""
@@ -1594,14 +1623,17 @@ def full_check(device_name):
     try:
         cards_serialized = serialize_cards(results.get("cards", []))
         # update main fields and cards in the DB
-        update_device(device_name, {
+        update_payload = {
             "name": results.get("account_name"),
             "balance": results.get("balance"),
             "number": results.get("account_number"),
             "income": results.get("turnover")['income'],
             "outcome": results.get("turnover")['expenses'],
             "cards": cards_serialized,
-        })
+        }
+        if results.get("blocked") is not None:
+            update_payload["blocked"] = 1 if results.get("blocked") else 0
+        update_device(device_name, update_payload)
         log(f"Database updated for {device_name}: cards={cards_serialized}")
     except Exception as exc:
         log(f"Failed updating DB for {device_name}: {exc}")
@@ -1635,6 +1667,7 @@ def check_balance(device_name):
 
     account_balance_info = parse_balance_and_account_name(main_dump)
     update_balance(device_name, account_balance_info.get('balance'))
+    sync_ozon_blocked(device_name, main_dump)
 
 
 

@@ -398,6 +398,7 @@ body {
 .device--busy { --accent: var(--amber); }
 .device--offline { --accent: #f87171; }
 .device--new { --accent: #ef4444; }
+.device--blocked { --accent: #f43f5e; }
 
 .device:active {
     transform: scale(0.975);
@@ -447,6 +448,26 @@ body {
     margin-top: 3px;
     font-size: 12px;
     color: var(--text-dim);
+}
+
+.device__block {
+    display: block;
+    margin-top: 5px;
+    color: #fda4af;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.block-banner {
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(244, 63, 94, 0.45);
+    background: rgba(244, 63, 94, 0.16);
+    color: #fda4af;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
 }
 
 .copy-btn {

@@ -226,10 +226,13 @@ def serialize_device(row: dict) -> dict:
     ip = row.get("ip")
     port = row.get("port")
     linked = bool(row.get("number"))
+    blocked = bool(row.get("blocked"))
     if device_id in _checking:
         status = "busy"
     elif not linked:
         status = "new"
+    elif blocked:
+        status = "blocked"
     elif ip and port:
         status = "online"
     else:
@@ -243,6 +246,7 @@ def serialize_device(row: dict) -> dict:
         "port": port if port not in (None, "") else "",
         "status": status,
         "linked": linked,
+        "blocked": blocked,
         "checking": device_id in _checking,
         "balance": _to_number(row.get("balance")),
         "income": _to_number(row.get("income")),
