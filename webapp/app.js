@@ -416,6 +416,12 @@ const LOGIN_OFF_ICON = `
     </svg>
 `;
 
+const CHECK_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6L9 17l-5-5"></path>
+    </svg>
+`;
+
 function deviceLabel(device) {
     return device.id || '—';
 }
@@ -469,10 +475,11 @@ function renderNewDeviceScreen(device) {
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status}
                     </span>
                 </div>
+                <button class="icon-btn" data-action="check-login" aria-label="Проверить вход">${LOAD_ICON}</button>
                 <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
             </div>
             ${renderDeviceSpecs(device)}
-            <div class="login-state">
+            <div class="login-state" id="loginState">
                 <div class="login-state__icon">${LOGIN_OFF_ICON}</div>
                 <p class="login-state__title">Вход в личный кабинет не выполнен</p>
                 <button class="btn btn--primary login-state__btn" data-action="login">Добавить</button>
@@ -754,6 +761,11 @@ deviceScreen.addEventListener('click', (event) => {
         return;
     }
 
+    if (event.target.closest('[data-action="check-login"]')) {
+        checkLoginState(detail.dataset.id);
+        return;
+    }
+
     const loadBtn = event.target.closest('.load-btn');
     if (loadBtn) {
         checkDevice(detail, loadBtn.dataset.check);
@@ -980,6 +992,47 @@ function renderLoginProgress(title, sub) {
         <p class="sheet__sub">${sub}</p>
         <div class="login-progress"><span class="login-progress__spinner">${LOAD_ICON}</span></div>
     `);
+}
+
+async function checkLoginState(deviceId) {
+    const btn = deviceScreen.querySelector('[data-action="check-login"]');
+    if (btn) btn.classList.add('is-loading');
+    haptic.impact('medium');
+    try {
+        const data = await api(`/devices/${encodeURIComponent(deviceId)}/login/refresh`, { method: 'POST' });
+        if (data.logged_in) {
+            showLoginDetected(data);
+        } else {
+            haptic.notify('warning');
+            showToast(loginStateMessage(data));
+        }
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось проверить экран');
+    } finally {
+        const b = deviceScreen.querySelector('[data-action="check-login"]');
+        if (b) b.classList.remove('is-loading');
+    }
+}
+
+function loginStateMessage(data) {
+    if (data.screen === 'login') return 'Открыт экран входа — вход не выполнен';
+    return 'Не удалось определить экран';
+}
+
+function showLoginDetected(data) {
+    haptic.notify('success');
+    const stateEl = document.getElementById('loginState');
+    if (stateEl) {
+        const sub = data.screen === 'pin' ? 'Открыт экран код-пароля' : 'Открыт главный экран';
+        stateEl.classList.add('login-state--done');
+        stateEl.innerHTML = `
+            <div class="login-state__icon login-state__icon--ok">${CHECK_ICON}</div>
+            <p class="login-state__title">Вход выполнен</p>
+            <p class="login-state__sub">${sub}</p>
+        `;
+    }
+    showToast('Вход выполнен');
 }
 
 function startLoginFlow(deviceId) {

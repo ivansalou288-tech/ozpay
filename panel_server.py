@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
 from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices
-from main import add_device, check_balance, check_cards, check_turnover, full_check, probe_adb
+from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
 PORT = 5001
@@ -450,6 +450,18 @@ async def api_login_resend(device_id: str) -> dict:
         raise HTTPException(status_code=409, detail="Кнопка ещё не активна")
     session.request_resend()
     return {"status": "awaiting_code"}
+
+
+@api.post("/devices/{device_id}/login/refresh")
+async def api_login_refresh(device_id: str) -> dict:
+    _require_device(device_id)
+    if device_id in _checking:
+        raise HTTPException(status_code=409, detail="Девайс занят")
+    try:
+        state = await asyncio.to_thread(check_login_state, device_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return state
 
 
 app.include_router(api)

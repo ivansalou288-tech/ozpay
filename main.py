@@ -519,7 +519,11 @@ def tap_pin_digit_and_wait(device, digit: str, expected_count: int) -> bool:
 
 
 def enter_lock_password(device, password: str) -> bool:
-    """Если открылся экран пароля — вводит PIN по UI-элементам и ждёт подтверждения счетчика введённых цифр."""
+    """Если открылся экран пароля — просто вводит PIN по UI-элементам, без проверки счётчика.
+
+    Каждая цифра нажимается по своему UI-элементу; при отсутствии элемента — по
+    статическим координатам. Счётчик 'Введено X из Y' не проверяется.
+    """
     pwd = _normalize_password_digits(password)
     if not pwd:
         return False
@@ -529,43 +533,23 @@ def enter_lock_password(device, password: str) -> bool:
         return False
 
     print(f"PIN order: {pwd}")
-    # If the UI does not show any entered-digit counter, fall back to blind entry
-    before_count, before_total = parse_entered_pin_count(dump_text)
-    if before_total == 0:
-        print("Счётчик не обнаружен — ввод вслепую (без ожидания счётчика)")
-        for index, digit in enumerate(pwd, start=1):
-            try:
-                tap_pin_digit(device, digit)
-            except Exception as exc:
-                # Fallback to static coordinates if available
-                coords = PIN_KEY_COORDS.get(str(digit))
-                if coords:
-                    print(f"Fallback: tap coords for digit={digit} at {coords}")
-                    try:
-                        tap_screen_point(device, *coords)
-                    except Exception as exc2:
-                        print(f"Не удалось нажать координаты для {digit}: {exc2}")
-                        return False
-                else:
-                    print(f"Ошибка: не найден UI-элемент и нет координат для цифры {digit}: {exc}")
+    for digit in pwd:
+        try:
+            tap_pin_digit(device, digit)
+        except Exception as exc:
+            coords = PIN_KEY_COORDS.get(str(digit))
+            if coords:
+                print(f"Fallback: tap coords for digit={digit} at {coords}")
+                try:
+                    tap_screen_point(device, *coords)
+                except Exception as exc2:
+                    print(f"Не удалось нажать координаты для {digit}: {exc2}")
                     return False
-
-            # print dump after each tap for visibility
-            try:
-                print("=== Дамп после нажатия (вслепую) ===")
-                print(get_dump_text(device))
-            except Exception:
-                pass
-
-            time.sleep(0.2)
-
-        return True
-
-    # Normal behaviour: wait for counter after each digit
-    for index, digit in enumerate(pwd, start=1):
-        if not tap_pin_digit_and_wait(device, digit, expected_count=index):
-            return False
+            else:
+                print(f"Ошибка: не найден UI-элемент и нет координат для цифры {digit}: {exc}")
+                return False
         time.sleep(0.2)
+
     return True
 
 
@@ -1309,6 +1293,38 @@ def detect_code_screen(device):
     if method is None and target is None:
         return None
     return {"method": method or "code", "target": target}
+
+
+def check_login_state(device_name):
+    """Проверяет текущий экран устройства и определяет, выполнен ли вход в ЛК.
+
+    Вход считается выполненным, если открыт экран ввода код-пароля (PIN) либо
+    главный экран приложения. Возвращает {'logged_in': bool, 'screen': str}.
+    """
+    device = connect_redroid(device_name=device_name)
+    try:
+        dump = get_dump_text(device)
+    except Exception:
+        dump = ""
+
+    if is_lock_screen_text(dump):
+        return {"logged_in": True, "screen": "pin"}
+
+    if re.search(
+        r"\bГлавная\b|Основной\s+сч[её]т|Баланс|Остаток|Доходы|Расходы|Операции|Оплатить|Пополнить|Перевести",
+        dump,
+        flags=re.IGNORECASE,
+    ):
+        return {"logged_in": True, "screen": "main"}
+
+    if re.search(
+        r"Введите\s+номер\s+телефона|Введите\s+код|последн\w*\s+6\s+цифр|Войти\s+по\s+почте",
+        dump,
+        flags=re.IGNORECASE,
+    ):
+        return {"logged_in": False, "screen": "login"}
+
+    return {"logged_in": False, "screen": "unknown"}
 
 
 def add_device(device_name, number, password, code_provider=None, new_code_timeout: float = 120.0, press_get_new_code: bool = True):
