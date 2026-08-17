@@ -190,6 +190,20 @@ def parse_bounds(bounds: str):
     }
 
 
+def usable_tap_point(bounds, min_y: int = 80):
+    """Точка нажатия только для реально видимого узла, не [0,0] и не статусбар."""
+    if not bounds:
+        return None
+    width = bounds["right"] - bounds["left"]
+    height = bounds["bottom"] - bounds["top"]
+    if width < 40 or height < 16:
+        return None
+    x, y = bounds["center"]
+    if x < 24 or y < min_y:
+        return None
+    return (x, y)
+
+
 def _text_to_digit(value: str):
     """Normalize UI text like 'цифра 0', 'цифра ноль', 'digit zero' to a single digit '0'..'9'."""
     if not value:
@@ -1666,6 +1680,18 @@ def _lk_name_pattern(name: str) -> str:
     return r"\s+".join(re.escape(part) for part in parts)
 
 
+def scroll_screen_to_bottom(device, swipes: int = 10):
+    """Долистать текущий экран вниз до конца."""
+    log(f"scroll_screen_to_bottom: {swipes} swipes")
+    for i in range(swipes):
+        try:
+            device.shell("input swipe 360 1180 360 220 350")
+        except Exception as exc:
+            log(f"scroll_screen_to_bottom: swipe failed: {exc}")
+            break
+        time.sleep(0.4)
+
+
 def scroll_and_tap(device, text_patterns, max_swipes: int = 14, exact: bool = False) -> bool:
     """Листает вниз, пока не найдёт один из элементов, и нажимает его."""
     if isinstance(text_patterns, str):
@@ -1699,11 +1725,8 @@ def scroll_and_tap(device, text_patterns, max_swipes: int = 14, exact: bool = Fa
                         break
                 if not matched:
                     continue
-                bounds = parse_bounds(node.attrib.get("bounds"))
-                if not bounds:
-                    continue
-                tap_point = bounds["top_center"]
-                if tap_point == (0, 0):
+                tap_point = usable_tap_point(parse_bounds(node.attrib.get("bounds")))
+                if not tap_point:
                     continue
                 tap_screen_point(device, *tap_point)
                 return True
@@ -1711,10 +1734,10 @@ def scroll_and_tap(device, text_patterns, max_swipes: int = 14, exact: bool = Fa
             break
         log(f"scroll_and_tap: {text_patterns!r} не на экране, свайп {attempt + 1}")
         try:
-            device.shell("input swipe 360 1450 360 420 450")
+            device.shell("input swipe 360 1180 360 220 350")
         except Exception as exc:
             log(f"scroll_and_tap: swipe failed: {exc}")
-        time.sleep(0.9)
+        time.sleep(0.7)
     return False
 
 
@@ -1755,12 +1778,17 @@ def logout_lk(device_name: str) -> bool:
     log(f"logout_lk: tapping LK name pattern={name_pattern!r}")
     if not find_and_tap_ui_element(device, name_pattern):
         raise RuntimeError("Не удалось нажать на имя ЛК")
-    time.sleep(1.8)
+    time.sleep(2.0)
+
+    log("logout_lk: scrolling profile to bottom")
+    scroll_screen_to_bottom(device, swipes=10)
+    time.sleep(0.6)
 
     logout_tapped = scroll_and_tap(
         device,
         ["Выйти из аккаунта", "Выйти из профиля", "Выйти"],
         exact=True,
+        max_swipes=4,
     )
     if not logout_tapped:
         raise RuntimeError("Не найдена кнопка «Выйти» в ЛК")
@@ -1777,7 +1805,7 @@ def logout_lk(device_name: str) -> bool:
         except Exception:
             dump = ""
         if re.search(r"выйти из (аккаунта|профиля)|подтверд", dump, flags=re.IGNORECASE):
-            find_and_tap_ui_element(device, r"^\s*Выйти\s*$") or find_and_tap_ui_element(device, r"Выйти")
+            scroll_and_tap(device, ["Выйти из аккаунта", "Выйти", "Подтвердить"], exact=True, max_swipes=1)
             time.sleep(1.5)
             continue
         time.sleep(1.0)
