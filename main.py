@@ -746,6 +746,8 @@ def extract_account_owner_name(text: str):
             continue
         if not re.search(r"[А-ЯЁа-яё]", candidate):
             continue
+        if re.fullmatch(r"[А-ЯЁ][а-яё]+\s+[А-ЯЁ]\.", candidate):
+            return candidate.strip()
         if re.fullmatch(r"[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+){1,2}(?:\s+[А-ЯЁ]\.)?", candidate):
             return candidate.strip()
 
@@ -1677,7 +1679,28 @@ def _lk_name_pattern(name: str) -> str:
     parts = [p for p in re.split(r"\s+", (name or "").replace(".", "").replace("\xa0", " ").strip()) if p]
     if not parts:
         return ""
-    return r"\s+".join(re.escape(part) for part in parts)
+    if len(parts) == 1:
+        return re.escape(parts[0])
+    first = re.escape(parts[0])
+    rest = parts[1]
+    # На главной Ozon часто «Тимур У.», в БД — «Тимур Умаров»
+    return rf"{first}\s+({re.escape(rest)}|{re.escape(rest[0])}\.?)"
+
+
+def _lk_name_tap_patterns(dump_text: str, db_name: str) -> list:
+    patterns = []
+    screen_name = extract_account_owner_name(dump_text or "")
+    if screen_name:
+        patterns.append(_lk_name_pattern(screen_name))
+    for match in re.finditer(r"[А-ЯЁ][а-яё]+[ \t\xa0]+[А-ЯЁ]\.?", dump_text or ""):
+        patterns.append(_lk_name_pattern(match.group(0)))
+    if db_name:
+        patterns.append(_lk_name_pattern(db_name))
+        first = (db_name.replace("\xa0", " ").split() or [""])[0]
+        if first:
+            patterns.append(re.escape(first))
+    patterns.append(r"[А-ЯЁ][а-яё]+\s+[А-ЯЁ]\.?")
+    return [p for p in dict.fromkeys(p for p in patterns if p)]
 
 
 def scroll_screen_to_bottom(device, swipes: int = 10):
@@ -1773,10 +1796,19 @@ def logout_lk(device_name: str) -> bool:
         except Exception:
             dump = ""
 
-    name = extract_account_owner_name(dump) or (get_name(device_name) or "")
-    name_pattern = _lk_name_pattern(name) or r"[А-ЯЁ][а-яё]+\s+[А-ЯЁ]\.?"
-    log(f"logout_lk: tapping LK name pattern={name_pattern!r}")
-    if not find_and_tap_ui_element(device, name_pattern):
+    try:
+        dump = get_dump_text(device)
+    except Exception:
+        dump = dump or ""
+
+    patterns = _lk_name_tap_patterns(dump, get_name(device_name) or "")
+    log(f"logout_lk: tapping LK name patterns={patterns!r}")
+    tapped = False
+    for name_pattern in patterns:
+        if find_and_tap_ui_element(device, name_pattern):
+            tapped = True
+            break
+    if not tapped:
         raise RuntimeError("Не удалось нажать на имя ЛК")
     time.sleep(2.0)
 
