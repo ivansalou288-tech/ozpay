@@ -457,6 +457,14 @@ function renderDeviceSpecs(device) {
     `;
 }
 
+const LOGOUT_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <path d="M16 17l5-5-5-5"></path>
+        <path d="M21 12H9"></path>
+    </svg>
+`;
+
 const TRASH_ICON = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 7h16"></path>
@@ -508,6 +516,7 @@ function renderDeviceScreen(device) {
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
+                <button class="icon-btn icon-btn--warn" data-action="logout" aria-label="Выйти из ЛК">${LOGOUT_ICON}</button>
                 <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
                 <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
             </div>
@@ -578,6 +587,51 @@ function closeDevice() {
     if (tg && tg.BackButton) {
         tg.BackButton.hide();
         tg.BackButton.offClick(closeDevice);
+    }
+}
+
+function askLogoutDevice(deviceId) {
+    const device = devices.find((item) => item.id === deviceId);
+    const label = device ? (lkName(device) || deviceLabel(device)) : deviceId;
+    haptic.impact('medium');
+    openSheet(`
+        <h3 class="sheet__title">Выйти из ЛК</h3>
+        <p class="sheet__sub">На устройстве выйдем из аккаунта ${label}. В панели откроется экран добавления ЛК.</p>
+        <div class="sheet__actions">
+            <button type="button" class="btn btn--danger" data-action="confirm-logout">Выйти</button>
+            <button type="button" class="btn" data-action="cancel">Отмена</button>
+        </div>
+    `);
+    sheetContent.querySelector('[data-action="confirm-logout"]').addEventListener('click', () => {
+        closeSheet();
+        logoutDevice(deviceId);
+    });
+    sheetContent.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+}
+
+async function logoutDevice(deviceId) {
+    if (isChecking(deviceId)) {
+        showToast('Дождитесь окончания проверки');
+        return;
+    }
+    localChecks.set(deviceId, 'all');
+    refreshView(deviceId);
+    haptic.impact('medium');
+    try {
+        const data = await api(`/devices/${encodeURIComponent(deviceId)}/logout`, { method: 'POST' });
+        if (!data.device) throw new Error('API не вернул девайс');
+        upsertDevice(normalizeDevice(data.device));
+        haptic.notify('success');
+        showToast('Вышли из ЛК');
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось выйти из ЛК');
+    } finally {
+        localChecks.delete(deviceId);
+        refreshView(deviceId);
     }
 }
 
@@ -751,6 +805,11 @@ deviceScreen.addEventListener('click', (event) => {
 
     if (event.target.closest('[data-action="back"]')) {
         closeDevice();
+        return;
+    }
+
+    if (event.target.closest('[data-action="logout"]')) {
+        askLogoutDevice(detail.dataset.id);
         return;
     }
 

@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
 from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices
-from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, probe_adb
+from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, logout_lk, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
 PORT = 5001
@@ -360,6 +360,29 @@ async def api_delete_device(device_id: str) -> dict:
     if not delete_device(device_id):
         raise HTTPException(status_code=500, detail="Не удалось удалить девайс")
     return {"ok": True, "id": device_id}
+
+
+@api.post("/devices/{device_id}/logout")
+async def api_logout_device(device_id: str) -> dict:
+    row = _require_device(device_id)
+    if device_id in _checking:
+        raise HTTPException(status_code=409, detail="Девайс уже проверяется")
+    if not row.get("number"):
+        raise HTTPException(status_code=400, detail="ЛК не привязан")
+
+    _checking.add(device_id)
+    lock = _lock_for(device_id)
+    try:
+        async with lock:
+            await asyncio.to_thread(logout_lk, device_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        _checking.discard(device_id)
+
+    return {"device": serialize_device(_require_device(device_id))}
 
 
 @api.post("/devices/{device_id}/check/{kind}")

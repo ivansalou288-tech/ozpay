@@ -1639,7 +1639,152 @@ def full_check(device_name):
         log(f"Failed updating DB for {device_name}: {exc}")
 
     return results
-    
+
+
+def _unlock_if_needed(device, device_name):
+    try:
+        dump = get_dump_text(device)
+    except Exception:
+        dump = ""
+    if not is_lock_screen_text(dump):
+        return dump
+    log("lock screen detected — attempting unlock")
+    pwd = get_password(device_name) or _get_password_from_env_or_file()
+    ok_unlock = ensure_lock_screen_unlocked(device, pwd)
+    log(f"unlock result: {ok_unlock}")
+    time.sleep(3.0)
+    try:
+        return get_dump_text(device)
+    except Exception:
+        return ""
+
+
+def _lk_name_pattern(name: str) -> str:
+    parts = [p for p in re.split(r"\s+", (name or "").replace(".", "").replace("\xa0", " ").strip()) if p]
+    if not parts:
+        return ""
+    return r"\s+".join(re.escape(part) for part in parts)
+
+
+def scroll_and_tap(device, text_patterns, max_swipes: int = 14, exact: bool = False) -> bool:
+    """Листает вниз, пока не найдёт один из элементов, и нажимает его."""
+    if isinstance(text_patterns, str):
+        text_patterns = [text_patterns]
+    compiled = []
+    for pattern in text_patterns:
+        if exact:
+            compiled.append(("exact", pattern.lower()))
+        else:
+            compiled.append(("re", re.compile(pattern, flags=re.IGNORECASE)))
+
+    for attempt in range(max_swipes + 1):
+        dump_path = dump_ui_xml(device)
+        root = get_dump_root(dump_path)
+        for node in root.iter():
+            for attr in ("text", "content-desc"):
+                value = node.attrib.get(attr)
+                if not value:
+                    continue
+                text = " ".join(value.split())
+                if not text:
+                    continue
+                matched = False
+                low = text.lower()
+                for kind, spec in compiled:
+                    if kind == "exact":
+                        matched = low == spec
+                    else:
+                        matched = spec.search(text) is not None
+                    if matched:
+                        break
+                if not matched:
+                    continue
+                bounds = parse_bounds(node.attrib.get("bounds"))
+                if not bounds:
+                    continue
+                tap_point = bounds["top_center"]
+                if tap_point == (0, 0):
+                    continue
+                tap_screen_point(device, *tap_point)
+                return True
+        if attempt >= max_swipes:
+            break
+        log(f"scroll_and_tap: {text_patterns!r} не на экране, свайп {attempt + 1}")
+        try:
+            device.shell("input swipe 360 1450 360 420 450")
+        except Exception as exc:
+            log(f"scroll_and_tap: swipe failed: {exc}")
+        time.sleep(0.9)
+    return False
+
+
+def clear_lk_session(device_name: str):
+    """Сбросить привязку ЛК в БД — панель покажет экран добавления."""
+    update_device(device_name, {
+        "number": "",
+        "password": "",
+        "name": "",
+        "balance": None,
+        "income": None,
+        "outcome": None,
+        "cards": "",
+        "blocked": 0,
+    })
+
+
+def logout_lk(device_name: str) -> bool:
+    """Выйти из ЛК: имя -> скролл до «Выйти» -> проверка экрана входа -> сброс ЛК в панели."""
+    device = connect_redroid(device_name=device_name)
+    dump = _unlock_if_needed(device, device_name)
+
+    if is_on_login_screen(device):
+        log(f"logout_lk: уже экран входа — сбрасываю ЛК для {device_name}")
+        clear_lk_session(device_name)
+        return True
+
+    if not re.search(r"\bГлавная\b|Основной\s+сч[её]т", dump or "", flags=re.IGNORECASE):
+        find_and_tap_ui_element(device, r"^\s*Главная")
+        time.sleep(1.2)
+        try:
+            dump = get_dump_text(device)
+        except Exception:
+            dump = ""
+
+    name = extract_account_owner_name(dump) or (get_name(device_name) or "")
+    name_pattern = _lk_name_pattern(name) or r"[А-ЯЁ][а-яё]+\s+[А-ЯЁ]\.?"
+    log(f"logout_lk: tapping LK name pattern={name_pattern!r}")
+    if not find_and_tap_ui_element(device, name_pattern):
+        raise RuntimeError("Не удалось нажать на имя ЛК")
+    time.sleep(1.8)
+
+    logout_tapped = scroll_and_tap(
+        device,
+        ["Выйти из аккаунта", "Выйти из профиля", "Выйти"],
+        exact=True,
+    )
+    if not logout_tapped:
+        raise RuntimeError("Не найдена кнопка «Выйти» в ЛК")
+    time.sleep(1.2)
+
+    deadline = time.time() + 20.0
+    while time.time() < deadline:
+        if is_on_login_screen(device):
+            log(f"logout_lk: экран входа подтверждён для {device_name}")
+            clear_lk_session(device_name)
+            return True
+        try:
+            dump = get_dump_text(device)
+        except Exception:
+            dump = ""
+        if re.search(r"выйти из (аккаунта|профиля)|подтверд", dump, flags=re.IGNORECASE):
+            find_and_tap_ui_element(device, r"^\s*Выйти\s*$") or find_and_tap_ui_element(device, r"Выйти")
+            time.sleep(1.5)
+            continue
+        time.sleep(1.0)
+
+    raise RuntimeError("После выхода не открылся экран входа")
+
+
 def check_balance(device_name):
     device = connect_redroid(device_name=device_name)
 

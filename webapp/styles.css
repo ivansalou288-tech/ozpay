@@ -176,6 +176,10 @@ body {
     animation: spin 0.7s linear;
 }
 
+.icon-btn--warn {
+    color: var(--amber);
+}
+
 .icon-btn--danger {
     color: #f87171;
 }
