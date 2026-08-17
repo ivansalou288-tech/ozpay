@@ -1564,15 +1564,15 @@ def full_check(device_name):
     def serialize_cards(cards_list):
         """Serialize list of card dicts into the required string format.
 
-        Each card is stored as: full_number/last4/cvv
+        Each card is stored as: full_number/expiry(without "/")/cvv
         Multiple cards are separated by ':'
         """
         out = []
         for c in (cards_list or []):
             num = c.get("card_number") or ""
-            last4 = c.get("card_last4") or (num[-4:] if num else "")
+            expiry = (c.get("expiry") or "").replace("/", "")
             cvv = c.get("cvv") or ""
-            out.append(f"{num}/{last4}/{cvv}")
+            out.append(f"{num}/{expiry}/{cvv}")
         return ":".join(out)
 
     try:

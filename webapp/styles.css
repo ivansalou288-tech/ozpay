@@ -869,6 +869,7 @@ body {
 }
 
 .card-row {
+    position: relative;
     display: block;
     width: 100%;
     padding: 12px 13px;
@@ -879,6 +880,7 @@ body {
     color: var(--text);
     font-family: inherit;
     cursor: pointer;
+    overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
@@ -903,7 +905,7 @@ body {
 }
 
 .card-row.is-open .card-row__preview {
-    display: none;
+    display: none !important;
 }
 
 .card-row__num,
@@ -924,16 +926,18 @@ body {
 }
 
 .card-row__expand {
-    display: none;
+    display: none !important;
     flex-direction: column;
     gap: 8px;
 }
 
 .card-row.is-open .card-row__expand {
-    display: flex;
+    display: flex !important;
 }
 
 .card-copy {
+    appearance: none;
+    -webkit-appearance: none;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -942,7 +946,7 @@ body {
     padding: 8px 10px;
     border-radius: 12px;
     border: 1px solid var(--stroke);
-    background: rgba(12, 8, 26, 0.55);
+    background: rgba(12, 8, 26, 0.85);
     color: var(--text);
     font-family: inherit;
     text-align: left;

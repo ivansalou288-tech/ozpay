@@ -184,18 +184,18 @@ def _format_expiry(raw: str) -> str:
     text = (raw or "").strip()
     if not text:
         return ""
-    if "/" in text:
-        return text
+    if re.fullmatch(r"(0[1-9]|1[0-2])/\d{2}(?:\d{2})?", text):
+        return text[:5] if len(text) > 5 else text
     digits = re.sub(r"\D", "", text)
     if len(digits) == 4:
         month = int(digits[:2]) if digits[:2].isdigit() else 0
         if 1 <= month <= 12:
             return f"{digits[:2]}/{digits[2:]}"
-    return text
+    return ""
 
 
 def parse_cards(raw: Optional[str]) -> list[dict]:
-    """cards в БД: number/expiry_or_last4/cvv, карты через ':'."""
+    """cards в БД: number/expiry/cvv, карты через ':'. Старый формат: number/last4/cvv."""
     if not raw:
         return []
     cards = []
@@ -207,9 +207,12 @@ def parse_cards(raw: Optional[str]) -> list[dict]:
         number = parts[0] if parts else ""
         middle = parts[1] if len(parts) > 1 else ""
         cvv = parts[2] if len(parts) > 2 else ""
-        expiry = _format_expiry(middle)
-        if not expiry and len(re.sub(r"\D", "", middle)) == 4:
+        number_digits = re.sub(r"\D", "", number)
+        middle_digits = re.sub(r"\D", "", middle)
+        if number_digits and middle_digits == number_digits[-4:]:
             expiry = ""
+        else:
+            expiry = _format_expiry(middle)
         cards.append({
             "number": _format_card_number(number),
             "expiry": expiry,
