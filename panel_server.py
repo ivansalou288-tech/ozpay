@@ -237,7 +237,7 @@ def serialize_device(row: dict) -> dict:
 
     return {
         "id": device_id,
-        "name": row.get("name") or device_id,
+        "name": (row.get("name") or "").strip(),
         "number": row.get("number") or "",
         "ip": ip or "",
         "port": port if port not in (None, "") else "",

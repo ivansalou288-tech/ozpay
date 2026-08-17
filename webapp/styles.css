@@ -935,6 +935,16 @@ body {
     display: flex !important;
 }
 
+.card-copy-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.card-copy-row .card-copy span {
+    flex: 0 0 auto;
+}
+
 .card-copy {
     appearance: none;
     -webkit-appearance: none;

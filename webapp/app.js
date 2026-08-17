@@ -324,7 +324,7 @@ function renderDevice(device, index = 0) {
         <div class="device device--${device.status}${checkingClass(id)}" data-id="${id}" style="animation-delay:${index * 45}ms">
             <div class="device__head">
                 <div class="device__title">
-                    <span class="device__name">${device.name}</span>
+                    <span class="device__name">${listName(device)}</span>
                     <span class="device__meta">
                         ${device.number}
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
@@ -390,16 +390,18 @@ function renderCardFull(card) {
                     <b>${number}</b>
                     ${COPY_ICON}
                 </button>
-                <button type="button" class="card-copy" data-copy="${expiry}" data-copy-msg="Дата скопирована">
-                    <span>дата</span>
-                    <b>${expiry}</b>
-                    ${COPY_ICON}
-                </button>
-                <button type="button" class="card-copy" data-copy="${cvv}" data-copy-msg="CVV скопирован">
-                    <span>cvv</span>
-                    <b>${cvv}</b>
-                    ${COPY_ICON}
-                </button>
+                <div class="card-copy-row">
+                    <button type="button" class="card-copy" data-copy="${expiry}" data-copy-msg="Дата скопирована">
+                        <span>дата</span>
+                        <b>${expiry}</b>
+                        ${COPY_ICON}
+                    </button>
+                    <button type="button" class="card-copy" data-copy="${cvv}" data-copy-msg="CVV скопирован">
+                        <span>cvv</span>
+                        <b>${cvv}</b>
+                        ${COPY_ICON}
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -415,7 +417,17 @@ const LOGIN_OFF_ICON = `
 `;
 
 function deviceLabel(device) {
-    return device.id || device.name || '—';
+    return device.id || '—';
+}
+
+function lkName(device) {
+    const name = (device.name || '').trim();
+    return name || '—';
+}
+
+function listName(device) {
+    const name = (device.name || '').trim();
+    return name || device.id || '—';
 }
 
 function renderDeviceSpecs(device) {
@@ -423,7 +435,7 @@ function renderDeviceSpecs(device) {
         <div class="spec-grid">
             <div class="spec-cell">
                 <span>имя</span>
-                <b>${deviceLabel(device)}</b>
+                <b>${lkName(device)}</b>
             </div>
             <div class="spec-cell">
                 <span>ip</span>
@@ -481,7 +493,7 @@ function renderDeviceScreen(device) {
             <div class="detail__top">
                 <button class="icon-btn" data-action="back" aria-label="Назад">${BACK_ICON}</button>
                 <div class="detail__title-wrap">
-                    <span class="detail__name">${deviceLabel(device)}</span>
+                    <span class="detail__name">${lkName(device)}</span>
                     <span class="detail__meta">
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status} · ${device.number}
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
