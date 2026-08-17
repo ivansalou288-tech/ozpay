@@ -45,9 +45,9 @@ def format_notification_message(
     if code:
         lines.append(f"<tg-emoji emoji-id='5775887550262546277'>❗️</tg-emoji> <b>Код:</b> <code>{code}</code>")
         lk_name = (account_name or "").strip() or "—"
-        lines.append(f"👤 <b>ЛК:</b> {html.escape(lk_name)}")
+        lines.append(f"<tg-emoji emoji-id='5879770735999717115'>👤</tg-emoji> <b>ЛК:</b> {html.escape(lk_name)}")
         lines.append(
-            f"<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Баланс:</b> {_format_db_balance(balance)}"
+            f"<tg-emoji emoji-id='6039641775377748623'>👛</tg-emoji> <b>Баланс:</b> {_format_db_balance(balance)}"
         )
     if amount:
         lines.append(f"<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> {amount} ₽")
