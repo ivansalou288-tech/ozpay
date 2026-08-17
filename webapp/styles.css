@@ -869,9 +869,7 @@ body {
 }
 
 .card-row {
-    display: flex;
-    align-items: center;
-    gap: 11px;
+    display: block;
     width: 100%;
     padding: 12px 13px;
     text-align: left;
@@ -881,6 +879,9 @@ body {
     color: var(--text);
     font-family: inherit;
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     transition: transform 0.14s ease, border-color 0.2s ease;
 }
 
@@ -889,32 +890,87 @@ body {
     border-color: var(--stroke-strong);
 }
 
-.card-row__mark {
-    width: 8px;
-    height: 8px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: var(--violet-bright);
-    box-shadow: 0 0 10px rgba(167, 139, 250, 0.7);
+.card-row.is-open {
+    transform: none;
+    border-color: var(--stroke-strong);
+    background: rgba(20, 13, 40, 0.85);
 }
 
-.card-row__body {
+.card-row__preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.card-row.is-open .card-row__preview {
+    display: none;
+}
+
+.card-row__num,
+.card-row__date,
+.card-row__cvv {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    line-height: 1.25;
+}
+
+.card-row__date,
+.card-row__cvv {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+.card-row__expand {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card-row.is-open .card-row__expand {
+    display: flex;
+}
+
+.card-copy {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--stroke);
+    background: rgba(12, 8, 26, 0.55);
+    color: var(--text);
+    font-family: inherit;
+    text-align: left;
+}
+
+.card-copy span {
+    flex: 0 0 58px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-dim);
+}
+
+.card-copy b {
     flex: 1;
     min-width: 0;
-}
-
-.card-row__num {
-    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.8px;
 }
 
-.card-row__meta {
-    display: block;
-    margin-top: 2px;
-    font-size: 11px;
-    color: var(--text-dim);
+.card-copy svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    color: var(--violet-bright);
 }
 
 /* ---------- sheet ---------- */

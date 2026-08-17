@@ -373,14 +373,35 @@ const COPY_ICON = `
 `;
 
 function renderCardFull(card) {
+    const number = card.number || '—';
+    const expiry = card.expiry || '—';
+    const cvv = card.cvv || '—';
+    const numberRaw = (card.number || '').replace(/\s/g, '');
     return `
-        <button class="card-row" data-number="${(card.number || '').replace(/\s/g, '')}" data-expiry="${card.expiry || ''}" data-cvv="${card.cvv || ''}">
-            <span class="card-row__mark"></span>
-            <span class="card-row__body">
-                <span class="card-row__num">${card.number || '—'}</span>
-                <span class="card-row__meta">${card.expiry || '—'} · ${card.cvv || '—'}</span>
-            </span>
-        </button>
+        <div class="card-row" data-number="${numberRaw}" data-expiry="${expiry}" data-cvv="${cvv}">
+            <div class="card-row__preview">
+                <span class="card-row__num">${number}</span>
+                <span class="card-row__date">${expiry}</span>
+                <span class="card-row__cvv">${cvv}</span>
+            </div>
+            <div class="card-row__expand">
+                <button type="button" class="card-copy" data-copy="${numberRaw}" data-copy-msg="Номер скопирован">
+                    <span>номер</span>
+                    <b>${number}</b>
+                    ${COPY_ICON}
+                </button>
+                <button type="button" class="card-copy" data-copy="${expiry}" data-copy-msg="Дата скопирована">
+                    <span>дата</span>
+                    <b>${expiry}</b>
+                    ${COPY_ICON}
+                </button>
+                <button type="button" class="card-copy" data-copy="${cvv}" data-copy-msg="CVV скопирован">
+                    <span>cvv</span>
+                    <b>${cvv}</b>
+                    ${COPY_ICON}
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -733,13 +754,74 @@ deviceScreen.addEventListener('click', (event) => {
         return;
     }
 
+    const fieldCopy = event.target.closest('.card-copy');
+    if (fieldCopy) {
+        copyText(fieldCopy.dataset.copy, fieldCopy.dataset.copyMsg || 'Скопировано');
+        return;
+    }
+
     const cardEl = event.target.closest('.card-row');
     if (cardEl) {
+        if (cardEl.dataset.hold === '1') {
+            delete cardEl.dataset.hold;
+            return;
+        }
+        if (cardEl.classList.contains('is-open')) return;
+        collapseOpenCards();
         const text = [cardEl.dataset.number, cardEl.dataset.expiry, cardEl.dataset.cvv].join('\n');
         if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
         haptic.notify('success');
         showToast('Данные карты скопированы');
+        return;
     }
+
+    collapseOpenCards();
+});
+
+function collapseOpenCards(except) {
+    deviceScreen.querySelectorAll('.card-row.is-open').forEach((el) => {
+        if (el !== except) el.classList.remove('is-open');
+    });
+}
+
+let cardHoldTimer = null;
+let cardHoldTarget = null;
+const CARD_HOLD_MS = 450;
+
+function clearCardHold(moved) {
+    if (cardHoldTimer) {
+        clearTimeout(cardHoldTimer);
+        cardHoldTimer = null;
+    }
+    if (moved) cardHoldTarget = null;
+}
+
+deviceScreen.addEventListener('pointerdown', (event) => {
+    const card = event.target.closest('.card-row');
+    if (!card || event.target.closest('.card-copy')) return;
+    clearCardHold();
+    cardHoldTarget = card;
+    cardHoldTimer = setTimeout(() => {
+        collapseOpenCards(card);
+        card.classList.add('is-open');
+        card.dataset.hold = '1';
+        haptic.impact('medium');
+        cardHoldTimer = null;
+    }, CARD_HOLD_MS);
+});
+
+deviceScreen.addEventListener('pointerup', () => clearCardHold());
+deviceScreen.addEventListener('pointercancel', () => clearCardHold(true));
+deviceScreen.addEventListener('pointermove', (event) => {
+    if (!cardHoldTarget || !cardHoldTimer) return;
+    const card = event.target.closest('.card-row');
+    if (card !== cardHoldTarget) clearCardHold(true);
+});
+deviceScreen.addEventListener('contextmenu', (event) => {
+    if (event.target.closest('.card-row')) event.preventDefault();
+});
+deviceScreen.addEventListener('contextmenu', (event) => {
+    if (event.target.closest('.card-row')) event.preventDefault();
 });
 
 document.addEventListener('click', (event) => {

@@ -10,5 +10,6 @@ SSL_KEYFILE = "/etc/letsencrypt/live/api.ozpay.ru/privkey.pem"
 # например: {"redroid-1": 123456789, "alpha-device": -1001234567890}
 DEVICE_CHAT_MAP = {
     "device1": -1004390313046,
+    "device2": -1004390313046,
     "redroid": -1004390313046,
 }
