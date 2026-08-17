@@ -1781,8 +1781,43 @@ def logout_lk(device_name: str) -> bool:
     time.sleep(2.0)
 
     log("logout_lk: scrolling profile to bottom")
-    scroll_screen_to_bottom(device, swipes=10)
+    scroll_screen_to_bottom(device, swipes=3)
     time.sleep(0.6)
+
+    logout_tapped = scroll_and_tap(
+        device,
+        ["Выйти из аккаунта", "Выйти из профиля", "Выйти"],
+        exact=True,
+        max_swipes=4,
+    )
+    if not logout_tapped:
+        raise RuntimeError("Не найдена кнопка «Выйти» в ЛК")
+    time.sleep(1.2)
+
+    log("logout_lk: tapping «Не в этот раз»")
+    if not scroll_and_tap(device, ["Не в этот раз", "Не в этот раз."], exact=True, max_swipes=2):
+        find_and_tap_ui_element(device, r"Не в этот раз")
+    time.sleep(1.2)
+
+    deadline = time.time() + 20.0
+    while time.time() < deadline:
+        if is_on_login_screen(device):
+            log(f"logout_lk: экран входа подтверждён для {device_name}")
+            clear_lk_session(device_name)
+            return True
+        try:
+            dump = get_dump_text(device)
+        except Exception:
+            dump = ""
+        if re.search(r"не в этот раз", dump, flags=re.IGNORECASE):
+            scroll_and_tap(device, ["Не в этот раз"], exact=True, max_swipes=1)
+            time.sleep(1.2)
+            continue
+        if re.search(r"выйти из (аккаунта|профиля)|подтверд", dump, flags=re.IGNORECASE):
+            scroll_and_tap(device, ["Выйти из аккаунта", "Выйти", "Подтвердить"], exact=True, max_swipes=1)
+            time.sleep(1.5)
+            continue
+        time.sleep(1.0)
 
     logout_tapped = scroll_and_tap(
         device,
