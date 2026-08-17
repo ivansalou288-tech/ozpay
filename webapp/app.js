@@ -374,17 +374,34 @@ const COPY_ICON = `
     </svg>
 `;
 
-function renderCardFull(card) {
+function renderCardSwitch(flag, label, on) {
+    return `
+        <button type="button" class="card-switch${on ? ' is-on' : ''}" data-flag="${flag}" aria-pressed="${on ? 'true' : 'false'}">
+            <span>${label}</span>
+            <i class="card-switch__track" aria-hidden="true"></i>
+        </button>
+    `;
+}
+
+function renderCardFull(card, deviceId) {
     const number = card.number || '—';
     const expiry = card.expiry || '—';
     const cvv = card.cvv || '—';
     const numberRaw = (card.number || '').replace(/\s/g, '');
+    const beeline = Boolean(card.beeline);
+    const yapay = Boolean(card.yapay);
     return `
-        <div class="card-row" data-number="${numberRaw}" data-expiry="${expiry}" data-cvv="${cvv}">
+        <div class="card-row" data-device="${deviceId}" data-number="${numberRaw}" data-expiry="${expiry}" data-cvv="${cvv}">
             <div class="card-row__preview">
-                <span class="card-row__num">${number}</span>
-                <span class="card-row__date">${expiry}</span>
-                <span class="card-row__cvv">${cvv}</span>
+                <div class="card-row__meta">
+                    <span class="card-row__num">${number}</span>
+                    <span class="card-row__date">${expiry}</span>
+                    <span class="card-row__cvv">${cvv}</span>
+                </div>
+                <div class="card-row__dots" aria-hidden="true">
+                    <span class="card-dot card-dot--beeline"${beeline ? '' : ' hidden'}></span>
+                    <span class="card-dot card-dot--yapay"${yapay ? '' : ' hidden'}></span>
+                </div>
             </div>
             <div class="card-row__expand">
                 <button type="button" class="card-copy" data-copy="${numberRaw}" data-copy-msg="Номер скопирован">
@@ -403,6 +420,10 @@ function renderCardFull(card) {
                         <b>${cvv}</b>
                         ${COPY_ICON}
                     </button>
+                </div>
+                <div class="card-flags">
+                    ${renderCardSwitch('beeline', 'Билайн', beeline)}
+                    ${renderCardSwitch('yapay', 'Япей', yapay)}
                 </div>
             </div>
         </div>
@@ -556,7 +577,7 @@ function renderDeviceScreen(device) {
                 <button class="load-btn load-btn--sm load-btn--inline${busyClass(device.id, 'cards')}" data-check="cards" aria-label="Обновить карты">${LOAD_ICON}</button>
             </div>
             <div class="cards-full${loadingClass(device.id, 'cards')}" data-field="cards">
-                ${(device.cards && device.cards.length) ? device.cards.map(renderCardFull).join('') : '<div class="empty">Карты не привязаны.</div>'}
+                ${(device.cards && device.cards.length) ? device.cards.map((card) => renderCardFull(card, device.id)).join('') : '<div class="empty">Карты не привязаны.</div>'}
             </div>
         </div>
     `;
@@ -840,6 +861,12 @@ deviceScreen.addEventListener('click', (event) => {
         return;
     }
 
+    const flagSwitch = event.target.closest('.card-switch');
+    if (flagSwitch) {
+        toggleCardFlag(flagSwitch);
+        return;
+    }
+
     const fieldCopy = event.target.closest('.card-copy');
     if (fieldCopy) {
         copyText(fieldCopy.dataset.copy, fieldCopy.dataset.copyMsg || 'Скопировано');
@@ -864,6 +891,45 @@ deviceScreen.addEventListener('click', (event) => {
     collapseOpenCards();
 });
 
+function applyCardFlagDom(cardEl, flag, on) {
+    const sw = cardEl.querySelector(`.card-switch[data-flag="${flag}"]`);
+    if (sw) {
+        sw.classList.toggle('is-on', on);
+        sw.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    const dot = cardEl.querySelector(`.card-dot--${flag}`);
+    if (dot) dot.hidden = !on;
+}
+
+async function toggleCardFlag(button) {
+    const cardEl = button.closest('.card-row');
+    if (!cardEl) return;
+    const deviceId = cardEl.dataset.device;
+    const number = cardEl.dataset.number;
+    const flag = button.dataset.flag;
+    if (!deviceId || !number || (flag !== 'beeline' && flag !== 'yapay')) return;
+
+    const next = button.getAttribute('aria-pressed') !== 'true';
+    applyCardFlagDom(cardEl, flag, next);
+
+    const device = devices.find((item) => item.id === deviceId);
+    const card = device && device.cards.find((item) => (item.number || '').replace(/\s/g, '') === number);
+    if (card) card[flag] = next;
+
+    try {
+        const data = await api(`/devices/${encodeURIComponent(deviceId)}/cards/flags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number, [flag]: next }),
+        });
+        if (data.device) upsertDevice(normalizeDevice(data.device));
+    } catch (error) {
+        applyCardFlagDom(cardEl, flag, !next);
+        if (card) card[flag] = !next;
+        showToast(error.message || 'Не удалось сохранить');
+    }
+}
+
 function collapseOpenCards(except) {
     deviceScreen.querySelectorAll('.card-row.is-open').forEach((el) => {
         if (el !== except) el.classList.remove('is-open');
@@ -884,7 +950,7 @@ function clearCardHold(moved) {
 
 deviceScreen.addEventListener('pointerdown', (event) => {
     const card = event.target.closest('.card-row');
-    if (!card || event.target.closest('.card-copy')) return;
+    if (!card || event.target.closest('.card-copy, .card-switch')) return;
     clearCardHold();
     cardHoldTarget = card;
     cardHoldTimer = setTimeout(() => {

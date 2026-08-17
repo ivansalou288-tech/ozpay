@@ -925,12 +925,113 @@ body {
 
 .card-row__preview {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.card-row__meta {
+    display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 
 .card-row.is-open .card-row__preview {
     display: none !important;
+}
+
+.card-row__dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 4px;
+    flex: 0 0 auto;
+}
+
+.card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.card-dot[hidden] {
+    display: none;
+}
+
+.card-dot--beeline {
+    background: #facc15;
+    color: #facc15;
+}
+
+.card-dot--yapay {
+    background: #ef4444;
+    color: #ef4444;
+}
+
+.card-flags {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.card-switch {
+    appearance: none;
+    -webkit-appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--stroke);
+    background: rgba(12, 8, 26, 0.85);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.card-switch__track {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(154, 108, 255, 0.18);
+    border: 1px solid var(--stroke);
+    transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.card-switch__track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ece7ff;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.card-switch.is-on .card-switch__track {
+    border-color: transparent;
+}
+
+.card-switch[data-flag="beeline"].is-on .card-switch__track {
+    background: #facc15;
+}
+
+.card-switch[data-flag="yapay"].is-on .card-switch__track {
+    background: #ef4444;
+}
+
+.card-switch.is-on .card-switch__track::after {
+    transform: translateX(16px);
+    background: #1a1028;
 }
 
 .card-row__num,

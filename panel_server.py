@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import queue
 import re
 import sqlite3
@@ -22,7 +23,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
-from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices
+from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices, update_card_flags
 from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, logout_lk, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
@@ -194,8 +195,33 @@ def _format_expiry(raw: str) -> str:
     return ""
 
 
-def parse_cards(raw: Optional[str]) -> list[dict]:
+def parse_card_flags(raw) -> dict:
+    if not raw:
+        return {}
+    if isinstance(raw, dict):
+        data = raw
+    else:
+        try:
+            data = json.loads(raw)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return {}
+    if not isinstance(data, dict):
+        return {}
+    flags = {}
+    for key, value in data.items():
+        digits = re.sub(r"\D", "", str(key))
+        if not digits or not isinstance(value, dict):
+            continue
+        flags[digits] = {
+            "beeline": bool(value.get("beeline")),
+            "yapay": bool(value.get("yapay")),
+        }
+    return flags
+
+
+def parse_cards(raw: Optional[str], flags_raw=None) -> list[dict]:
     """cards в БД: number/expiry/cvv, карты через ':'. Старый формат: number/last4/cvv."""
+    flags_map = parse_card_flags(flags_raw)
     if not raw:
         return []
     cards = []
@@ -213,10 +239,13 @@ def parse_cards(raw: Optional[str]) -> list[dict]:
             expiry = ""
         else:
             expiry = _format_expiry(middle)
+        flags = flags_map.get(number_digits) or {}
         cards.append({
             "number": _format_card_number(number),
             "expiry": expiry,
             "cvv": cvv,
+            "beeline": bool(flags.get("beeline")),
+            "yapay": bool(flags.get("yapay")),
         })
     return cards
 
@@ -251,7 +280,7 @@ def serialize_device(row: dict) -> dict:
         "balance": _to_number(row.get("balance")),
         "income": _to_number(row.get("income")),
         "outcome": _to_number(row.get("outcome")),
-        "cards": parse_cards(row.get("cards")),
+        "cards": parse_cards(row.get("cards"), row.get("card_flags")),
     }
 
 
@@ -382,6 +411,31 @@ async def api_logout_device(device_id: str) -> dict:
     finally:
         _checking.discard(device_id)
 
+    return {"device": serialize_device(_require_device(device_id))}
+
+
+@api.post("/devices/{device_id}/cards/flags")
+async def api_update_card_flags(device_id: str, request: Request) -> dict:
+    _require_device(device_id)
+    body = await request.json()
+    number = re.sub(r"\D", "", str(body.get("number") or ""))
+    if not number:
+        raise HTTPException(status_code=400, detail="Укажите номер карты")
+
+    row = get_device(device_id)
+    flags = parse_card_flags(row.get("card_flags") if row else None)
+    current = flags.get(number) or {"beeline": False, "yapay": False}
+    if "beeline" in body:
+        current["beeline"] = bool(body.get("beeline"))
+    if "yapay" in body:
+        current["yapay"] = bool(body.get("yapay"))
+    if current["beeline"] or current["yapay"]:
+        flags[number] = current
+    else:
+        flags.pop(number, None)
+
+    if not update_card_flags(device_id, json.dumps(flags, ensure_ascii=False)):
+        raise HTTPException(status_code=500, detail="Не удалось сохранить флаги карты")
     return {"device": serialize_device(_require_device(device_id))}
 
 
