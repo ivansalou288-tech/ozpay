@@ -13,8 +13,6 @@ from config import BOT_TOKEN, DEVICE_CHAT_MAP, SSL_CERTFILE, SSL_KEYFILE
 from db_api import get_device
 from pars import parse_message
 
-BALANCE_REFRESH_DELAY_SEC = 15
-
 
 def _format_db_balance(balance) -> str:
     if balance is None or balance == "":
@@ -76,17 +74,6 @@ def format_notification_message(
         )
 
     return text, markup
-
-
-async def refresh_balance_later(device_name: str) -> None:
-    await asyncio.sleep(BALANCE_REFRESH_DELAY_SEC)
-    try:
-        from main import check_balance
-
-        await asyncio.to_thread(check_balance, device_name)
-        print(f"Balance refreshed for '{device_name}' after code redirect")
-    except Exception as exc:
-        print(f"Failed to refresh balance for '{device_name}': {exc}")
 
 
 class NotifyRequest(BaseModel):
@@ -179,9 +166,6 @@ async def notify(request: Request) -> dict:
         text=f"<tg-emoji emoji-id='5877318502947229960'>💻</tg-emoji> <b>{html.escape(device_name)}</b>\n\n{formatted_text}",
         reply_markup=reply_markup,
     )
-
-    if parsed.get("code"):
-        asyncio.create_task(refresh_balance_later(device_name))
 
     print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {formatted_text}")
 
