@@ -1,4 +1,5 @@
 import asyncio
+import html
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
@@ -9,10 +10,32 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 from config import BOT_TOKEN, DEVICE_CHAT_MAP, SSL_CERTFILE, SSL_KEYFILE
+from db_api import get_device
 from pars import parse_message
 
+BALANCE_REFRESH_DELAY_SEC = 15
 
-def format_notification_message(message: str) -> tuple[str, Optional[InlineKeyboardMarkup]]:
+
+def _format_db_balance(balance) -> str:
+    if balance is None or balance == "":
+        return "—"
+    try:
+        value = float(balance)
+    except (TypeError, ValueError):
+        return html.escape(str(balance))
+    if value.is_integer():
+        formatted = f"{int(value):,}".replace(",", " ")
+    else:
+        formatted = f"{value:,.2f}".replace(",", " ")
+    return f"{formatted} ₽"
+
+
+def format_notification_message(
+    message: str,
+    *,
+    account_name: Optional[str] = None,
+    balance=None,
+) -> tuple[str, Optional[InlineKeyboardMarkup]]:
     parsed = parse_message(message)
     code = parsed.get("code")
     amount = parsed.get("amount")
@@ -21,6 +44,11 @@ def format_notification_message(message: str) -> tuple[str, Optional[InlineKeybo
     lines = []
     if code:
         lines.append(f"<tg-emoji emoji-id='5775887550262546277'>❗️</tg-emoji> <b>Код:</b> <code>{code}</code>")
+        lk_name = (account_name or "").strip() or "—"
+        lines.append(f"👤 <b>ЛК:</b> {html.escape(lk_name)}")
+        lines.append(
+            f"<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Баланс:</b> {_format_db_balance(balance)}"
+        )
     if amount:
         lines.append(f"<tg-emoji emoji-id='5769403330761593044'>👛</tg-emoji> <b>Сумма:</b> {amount} ₽")
     if service:
@@ -28,7 +56,7 @@ def format_notification_message(message: str) -> tuple[str, Optional[InlineKeybo
 
     lines.append("")
     lines.append("<tg-emoji emoji-id='5956561916573782596'>📄</tg-emoji> <b>Полный текст уведомления:</b>")
-    lines.append(message)
+    lines.append(html.escape(message))
 
     text = "\n".join(lines)
 
@@ -49,6 +77,16 @@ def format_notification_message(message: str) -> tuple[str, Optional[InlineKeybo
 
     return text, markup
 
+
+async def refresh_balance_later(device_name: str) -> None:
+    await asyncio.sleep(BALANCE_REFRESH_DELAY_SEC)
+    try:
+        from main import check_balance
+
+        await asyncio.to_thread(check_balance, device_name)
+        print(f"Balance refreshed for '{device_name}' after code redirect")
+    except Exception as exc:
+        print(f"Failed to refresh balance for '{device_name}': {exc}")
 
 
 class NotifyRequest(BaseModel):
@@ -128,13 +166,22 @@ async def notify(request: Request) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    formatted_text, reply_markup = format_notification_message(message_text)
+    account = get_device(device_name) or {}
+    parsed = parse_message(message_text)
+    formatted_text, reply_markup = format_notification_message(
+        message_text,
+        account_name=account.get("name"),
+        balance=account.get("balance"),
+    )
 
     await bot.send_message(
         chat_id=chat_id,
-        text=f"<tg-emoji emoji-id='5877318502947229960'>💻</tg-emoji> <b>{device_name}</b>\n\n{formatted_text}",
+        text=f"<tg-emoji emoji-id='5877318502947229960'>💻</tg-emoji> <b>{html.escape(device_name)}</b>\n\n{formatted_text}",
         reply_markup=reply_markup,
     )
+
+    if parsed.get("code"):
+        asyncio.create_task(refresh_balance_later(device_name))
 
     print(f"Notification sent to device '{device_name}' (chat_id: {chat_id}): {formatted_text}")
 
@@ -143,7 +190,7 @@ async def notify(request: Request) -> dict:
         "device_name": device_name,
         "chat_id": chat_id,
         "message": message_text,
-        "parsed": parse_message(message_text),
+        "parsed": parsed,
     }
 
 if __name__ == "__main__":
