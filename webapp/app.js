@@ -328,7 +328,7 @@ function renderDevice(device, index = 0) {
                     <span class="device__name">${listName(device)}</span>
                     <span class="device__meta">
                         ${device.number}
-                        <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
+                        <button class="copy-btn" data-copy="${phoneDigits(device.number)}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                     ${device.blocked ? '<span class="device__block">Ozon: операции приостановлены</span>' : ''}
                 </div>
@@ -478,6 +478,14 @@ function renderDeviceSpecs(device) {
     `;
 }
 
+const LK_COPY_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="8" y="8" width="12" height="13" rx="2"></rect>
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path>
+        <path d="M11 13h6M11 16h4"></path>
+    </svg>
+`;
+
 const KEY_ICON = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="8" cy="15" r="4"></circle>
@@ -543,13 +551,16 @@ function renderDeviceScreen(device) {
                     <span class="detail__name">${lkName(device)}</span>
                     <span class="detail__meta">
                         <i class="detail__dot"></i>${STATUS_LABEL[device.status] || device.status} · ${device.number}
-                        <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
+                        <button class="copy-btn" data-copy="${phoneDigits(device.number)}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
-                <button class="icon-btn" data-action="password" aria-label="Сменить код-пароль">${KEY_ICON}</button>
-                <button class="icon-btn icon-btn--warn" data-action="logout" aria-label="Выйти из ЛК">${LOGOUT_ICON}</button>
-                <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
-                <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
+                <div class="detail__actions">
+                    <button class="icon-btn icon-btn--block" data-action="copy-lk" aria-label="Скопировать данные ЛК">${LK_COPY_ICON}</button>
+                    <button class="icon-btn" data-action="password" aria-label="Сменить код-пароль">${KEY_ICON}</button>
+                    <button class="icon-btn icon-btn--warn" data-action="logout" aria-label="Выйти из ЛК">${LOGOUT_ICON}</button>
+                    <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
+                    <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
+                </div>
             </div>
 
             ${renderDeviceSpecs(device)}
@@ -819,6 +830,21 @@ function copyText(text, toast) {
     showToast(toast);
 }
 
+function phoneDigits(number) {
+    let digits = String(number || '').replace(/\D/g, '');
+    if (digits.length >= 11 && (digits[0] === '7' || digits[0] === '8')) {
+        digits = digits.slice(1);
+    }
+    if (digits.length > 10) digits = digits.slice(-10);
+    return digits;
+}
+
+function lkCopyText(device) {
+    const number = phoneDigits(device.number);
+    const name = (device.name || '').trim() || deviceLabel(device);
+    return [number, name, 'Ozon Bank'].join('\n');
+}
+
 function showToast(text) {
     toastEl.textContent = text;
     toastEl.classList.add('is-open');
@@ -892,6 +918,12 @@ deviceScreen.addEventListener('click', (event) => {
 
     if (event.target.closest('[data-action="back"]')) {
         closeDevice();
+        return;
+    }
+
+    if (event.target.closest('[data-action="copy-lk"]')) {
+        const device = devices.find((item) => item.id === detail.dataset.id);
+        if (device) copyText(lkCopyText(device), 'Данные ЛК скопированы');
         return;
     }
 

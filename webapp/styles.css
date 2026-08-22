@@ -736,14 +736,43 @@ body {
 
 .detail__top {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: 16px;
 }
 
 .detail__title-wrap {
     flex: 1;
     min-width: 0;
+    padding-top: 4px;
+}
+
+.detail__actions {
+    display: grid;
+    grid-template-columns: 84px 38px 38px;
+    grid-template-rows: 38px 38px;
+    gap: 8px;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.detail__actions .load-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+}
+
+.icon-btn--block {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+}
+
+.icon-btn--block svg {
+    width: 34px;
+    height: 34px;
 }
 
 .detail__name {
