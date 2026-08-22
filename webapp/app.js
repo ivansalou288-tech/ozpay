@@ -478,6 +478,15 @@ function renderDeviceSpecs(device) {
     `;
 }
 
+const KEY_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="8" cy="15" r="4"></circle>
+        <path d="M10.8 12.2L21 2"></path>
+        <path d="M16 3l3 3"></path>
+        <path d="M19 6l2 2"></path>
+    </svg>
+`;
+
 const LOGOUT_ICON = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -537,6 +546,7 @@ function renderDeviceScreen(device) {
                         <button class="copy-btn" data-copy="${device.number}" aria-label="Скопировать номер">${COPY_ICON}</button>
                     </span>
                 </div>
+                <button class="icon-btn" data-action="password" aria-label="Сменить код-пароль">${KEY_ICON}</button>
                 <button class="icon-btn icon-btn--warn" data-action="logout" aria-label="Выйти из ЛК">${LOGOUT_ICON}</button>
                 <button class="icon-btn icon-btn--danger" data-action="delete" aria-label="Удалить">${TRASH_ICON}</button>
                 <button class="load-btn${busyClass(device.id, 'all')}" data-check="all" aria-label="Полная проверка">${LOAD_ICON}</button>
@@ -608,6 +618,62 @@ function closeDevice() {
     if (tg && tg.BackButton) {
         tg.BackButton.hide();
         tg.BackButton.offClick(closeDevice);
+    }
+}
+
+function askChangePassword(deviceId) {
+    haptic.impact('medium');
+    openSheet(`
+        <h3 class="sheet__title">Сменить код-пароль</h3>
+        <p class="sheet__sub">Пароль в Ozon вы меняете сами. Здесь только запись в базу для этого ЛК.</p>
+        <form class="form" id="passwordForm" autocomplete="off">
+            <label class="field">
+                <span class="field__label">Новый код-пароль *</span>
+                <input class="field__input" name="password" placeholder="4 цифры" inputmode="numeric" autocomplete="off" maxlength="8" required>
+            </label>
+            <div class="sheet__actions">
+                <button type="submit" class="btn btn--primary">Сохранить</button>
+                <button type="button" class="btn" data-action="cancel">Отмена</button>
+            </div>
+        </form>
+    `);
+    const form = document.getElementById('passwordForm');
+    form.addEventListener('submit', (event) => onPasswordSubmit(event, deviceId));
+    form.elements.password.addEventListener('input', () => {
+        form.elements.password.value = form.elements.password.value.replace(/\D/g, '');
+    });
+    form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        haptic.impact('light');
+        closeSheet();
+    });
+    setTimeout(() => form.elements.password.focus(), 80);
+}
+
+async function onPasswordSubmit(event, deviceId) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const password = form.elements.password.value.replace(/\D/g, '');
+    if (password.length < 4) {
+        showToast('Код-пароль: минимум 4 цифры');
+        return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Сохраняю…';
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}/password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+        });
+        haptic.notify('success');
+        closeSheet();
+        showToast('Пароль обновлён в базе');
+    } catch (error) {
+        haptic.notify('error');
+        showToast(error.message || 'Не удалось сохранить пароль');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Сохранить';
     }
 }
 
@@ -826,6 +892,11 @@ deviceScreen.addEventListener('click', (event) => {
 
     if (event.target.closest('[data-action="back"]')) {
         closeDevice();
+        return;
+    }
+
+    if (event.target.closest('[data-action="password"]')) {
+        askChangePassword(detail.dataset.id);
         return;
     }
 

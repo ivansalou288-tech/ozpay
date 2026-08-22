@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
-from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices, update_card_flags
+from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices, update_card_flags, update_password
 from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, logout_lk, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
@@ -543,6 +543,18 @@ async def api_login_refresh(device_id: str) -> dict:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return state
+
+
+@api.post("/devices/{device_id}/password")
+async def api_update_password(device_id: str, request: Request) -> dict:
+    _require_device(device_id)
+    body = await request.json()
+    password = re.sub(r"\D", "", str(body.get("password") or ""))
+    if len(password) < 4:
+        raise HTTPException(status_code=400, detail="Код-пароль: минимум 4 цифры")
+    if not update_password(device_id, password):
+        raise HTTPException(status_code=500, detail="Не удалось сохранить пароль")
+    return {"ok": True, "id": device_id}
 
 
 app.include_router(api)
