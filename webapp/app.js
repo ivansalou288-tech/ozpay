@@ -1551,19 +1551,25 @@ function codeHintText(info) {
     return `Введите 6-значный код${target ? ', отправленный на ' + target : ''}.`;
 }
 
+const CODE_LENGTH = 6;
+
 function renderCodeForm(deviceId, info) {
+    const cells = Array.from({ length: CODE_LENGTH }, () => '<span class="code-cell"></span>').join('');
     openSheet(`
         <h3 class="sheet__title">Подтверждение входа</h3>
         <p class="sheet__sub" id="codeHint">${codeHintText(info)}</p>
         <form class="form" id="codeForm" autocomplete="off">
-            <label class="field">
+            <div class="field">
                 <span class="field__label">Код *</span>
-                <input class="field__input" name="code" placeholder="6 цифр" inputmode="numeric" maxlength="6" required>
-            </label>
+                <div class="code-input" id="codeInput">
+                    <input class="code-input__field" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="${CODE_LENGTH}" autocomplete="one-time-code" required>
+                    <div class="code-input__cells" aria-hidden="true">${cells}</div>
+                </div>
+            </div>
             <div class="sheet__actions">
-                <button type="submit" class="btn btn--primary">Подтвердить</button>
+                <button type="submit" class="btn btn--primary" id="codeSubmitBtn" disabled>Подтвердить</button>
                 <button type="button" class="btn btn--ghost" id="resendBtn" data-action="resend" disabled>Отправить код заново</button>
-                <button type="button" class="btn" data-action="cancel">Отменить вход</button>
+                <button type="button" class="btn" data-action="cancel">Отменить</button>
             </div>
         </form>
     `, {
@@ -1571,14 +1577,34 @@ function renderCodeForm(deviceId, info) {
         onClose: () => confirmCancelLogin(deviceId),
     });
     const form = document.getElementById('codeForm');
+    const input = form.elements.code;
+    const wrap = document.getElementById('codeInput');
+    const submitBtn = document.getElementById('codeSubmitBtn');
+
+    const syncCells = () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+        const value = input.value;
+        const filled = value.length;
+        wrap.querySelectorAll('.code-cell').forEach((cell, i) => {
+            cell.textContent = value[i] || '';
+            cell.classList.toggle('code-cell--filled', i < filled);
+            cell.classList.toggle('code-cell--active', i === filled && document.activeElement === input);
+        });
+        const complete = filled === CODE_LENGTH;
+        wrap.classList.toggle('is-complete', complete);
+        submitBtn.disabled = !complete;
+    };
+
     form.addEventListener('submit', (event) => onCodeSubmit(event, deviceId));
-    form.elements.code.addEventListener('input', () => {
-        form.elements.code.value = form.elements.code.value.replace(/\D/g, '').slice(0, 6);
-    });
+    input.addEventListener('input', syncCells);
+    input.addEventListener('focus', syncCells);
+    input.addEventListener('blur', syncCells);
+    wrap.addEventListener('click', () => input.focus());
     document.getElementById('resendBtn').addEventListener('click', () => onResend(deviceId));
     form.querySelector('[data-action="cancel"]').addEventListener('click', () => confirmCancelLogin(deviceId));
     updateCodeForm(info);
-    setTimeout(() => form.elements.code.focus(), 80);
+    syncCells();
+    setTimeout(() => input.focus(), 80);
 }
 
 function updateCodeForm(info) {
