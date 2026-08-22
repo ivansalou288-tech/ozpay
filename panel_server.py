@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import SSL_CERTFILE, SSL_KEYFILE
 from db_api import create_device, delete_device, find_device_by_ip_port, get_device, list_devices, update_card_flags, update_password
-from main import add_device, check_balance, check_cards, check_login_state, check_turnover, full_check, logout_lk, probe_adb
+from main import add_device, cancel_login, check_balance, check_cards, check_login_state, check_turnover, full_check, logout_lk, probe_adb
 
 WEBAPP_DIR = Path(__file__).parent / "webapp"
 PORT = 5001
@@ -51,8 +51,12 @@ _checking: set[str] = set()
 
 # Активные сессии входа в ЛК (device_id -> LoginSession).
 _login_sessions: dict[str, "LoginSession"] = {}
-_ACTIVE_LOGIN_STATES = {"running", "awaiting_code", "verifying"}
+_ACTIVE_LOGIN_STATES = {"running", "awaiting_code", "verifying", "cancelling"}
 CODE_WAIT_TIMEOUT = 300.0
+
+
+class LoginCancelled(Exception):
+    """Пользователь отменил вход из панели."""
 
 
 class LoginSession:
@@ -72,6 +76,7 @@ class LoginSession:
         self.error: Optional[str] = None
         self.device: Optional[dict] = None
         self.resend_available = False
+        self.cancel_requested = False
         self._device = None  # ppadb device, выдаётся add_device на шаге кода
         self._action_q: "queue.Queue[tuple]" = queue.Queue()
         self.thread: Optional[threading.Thread] = None
@@ -111,6 +116,8 @@ class LoginSession:
         hint = hint or {}
         self.method = hint.get("method")
         self.target = hint.get("target")
+        if self.cancel_requested:
+            raise LoginCancelled()
         self.status = "awaiting_code"
 
         deadline = time.time() + CODE_WAIT_TIMEOUT
@@ -120,6 +127,8 @@ class LoginSession:
                 action, payload = self._action_q.get(timeout=2.0)
             except queue.Empty:
                 continue
+            if action == "cancel":
+                raise LoginCancelled()
             if action == "code":
                 self.status = "verifying"
                 return payload
@@ -134,6 +143,12 @@ class LoginSession:
     def request_resend(self):
         self._action_q.put(("resend", None))
 
+    def request_cancel(self):
+        """Пометить сессию как отменяемую и разбудить поток, ждущий код."""
+        self.cancel_requested = True
+        self.status = "cancelling"
+        self._action_q.put(("cancel", None))
+
 
 def _run_login(session: LoginSession):
     try:
@@ -146,9 +161,23 @@ def _run_login(session: LoginSession):
         )
         session.device = serialize_device(_require_device(session.device_id))
         session.status = "done"
+    except LoginCancelled:
+        session.status = "cancelling"
+        try:
+            cancel_login(session.device_id)
+        except Exception as exc:  # noqa: BLE001 — навигация назад не должна ронять поток
+            print(f"cancel_login({session.device_id}) failed: {exc}")
+        session.status = "cancelled"
     except Exception as exc:  # noqa: BLE001 — прокидываем текст ошибки в UI
-        session.error = str(exc)
-        session.status = "error"
+        if session.cancel_requested:
+            try:
+                cancel_login(session.device_id)
+            except Exception as nav_exc:  # noqa: BLE001
+                print(f"cancel_login({session.device_id}) failed: {nav_exc}")
+            session.status = "cancelled"
+        else:
+            session.error = str(exc)
+            session.status = "error"
     finally:
         _checking.discard(session.device_id)
 
@@ -531,6 +560,15 @@ async def api_login_resend(device_id: str) -> dict:
         raise HTTPException(status_code=409, detail="Кнопка ещё не активна")
     session.request_resend()
     return {"status": "awaiting_code"}
+
+
+@api.post("/devices/{device_id}/login/cancel")
+async def api_login_cancel(device_id: str) -> dict:
+    session = _login_sessions.get(device_id)
+    if not session or session.status not in _ACTIVE_LOGIN_STATES:
+        return {"status": "idle"}
+    session.request_cancel()
+    return {"status": session.status}
 
 
 @api.post("/devices/{device_id}/login/refresh")

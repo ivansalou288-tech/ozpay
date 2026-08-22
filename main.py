@@ -1987,6 +1987,52 @@ def logout_lk(device_name: str) -> bool:
     raise RuntimeError("После выхода не открылся экран входа")
 
 
+def cancel_login(device_name: str, max_back: int = 8) -> bool:
+    """Отмена входа: жмём «Назад», пока не окажемся на экране входа.
+
+    Если по пути всплывает предложение войти в существующий аккаунт
+    («Войти в этот аккаунт?» / «Продолжить как …»), выбираем «Выбрать другой
+    аккаунт», чтобы вернуться именно на экран ввода номера, а не залогиниться.
+    Возвращает True, если удалось выйти на экран входа.
+    """
+    device = connect_redroid(device_name=device_name)
+
+    for attempt in range(max_back + 1):
+        if is_on_login_screen(device):
+            log(f"cancel_login: экран входа достигнут для {device_name}")
+            return True
+
+        try:
+            dump = get_dump_text(device)
+        except Exception:
+            dump = ""
+
+        if re.search(
+            r"войти\s+(ли\s+)?в\s+эт(от|ом)\s+аккаунт|продолжить\s+как|это ваш аккаунт|выбрать другой",
+            dump,
+            flags=re.IGNORECASE,
+        ):
+            log("cancel_login: предложение войти в аккаунт — жму «Выбрать другой аккаунт»")
+            tapped_other = (
+                scroll_and_tap(
+                    device,
+                    ["Выбрать другой аккаунт", "Выбрать другой", "Другой аккаунт"],
+                    exact=True,
+                    max_swipes=2,
+                )
+                or find_and_tap_ui_element(device, r"Выбрать другой")
+            )
+            if tapped_other:
+                time.sleep(1.4)
+                continue
+
+        if attempt < max_back:
+            press_back(device)
+            time.sleep(1.4)
+
+    return is_on_login_screen(device)
+
+
 def check_balance(device_name):
     device = connect_redroid(device_name=device_name)
 

@@ -858,29 +858,44 @@ const sheet = document.getElementById('sheet');
 const sheetBackdrop = document.getElementById('sheetBackdrop');
 const sheetContent = document.getElementById('sheetContent');
 
-function openSheet(html) {
+// Перехватчик закрытия шторки (для входа в ЛК: спросить подтверждение отмены).
+let sheetCloseHandler = null;
+
+function requestSheetClose() {
+    if (sheetCloseHandler) {
+        sheetCloseHandler();
+        return;
+    }
+    closeSheet();
+}
+
+function openSheet(html, options = {}) {
     sheetContent.innerHTML = html;
+    sheet.classList.toggle('sheet--full', Boolean(options.full));
+    sheetCloseHandler = typeof options.onClose === 'function' ? options.onClose : null;
     sheet.classList.add('is-open');
     sheetBackdrop.classList.add('is-open');
     if (tg && tg.BackButton) {
         tg.BackButton.show();
-        tg.BackButton.onClick(closeSheet);
+        tg.BackButton.onClick(requestSheetClose);
     }
 }
 
 function closeSheet() {
     stopLoginPoll();
+    sheetCloseHandler = null;
     sheet.classList.remove('is-open');
+    sheet.classList.remove('sheet--full');
     sheetBackdrop.classList.remove('is-open');
     if (tg && tg.BackButton) {
         tg.BackButton.hide();
-        tg.BackButton.offClick(closeSheet);
+        tg.BackButton.offClick(requestSheetClose);
     }
 }
 
 sheetBackdrop.addEventListener('click', () => {
     haptic.impact('light');
-    closeSheet();
+    requestSheetClose();
 });
 
 /* ---------- Клики ---------- */
@@ -1202,8 +1217,20 @@ async function onAddSubmit(event) {
 
 /* ---------- Вход в личный кабинет (add_device) ---------- */
 
+const LOGIN_STORAGE_KEY = 'ozpay:activeLogin';
+const RESUMABLE_LOGIN_STATUSES = ['running', 'awaiting_code', 'verifying'];
+
 let loginPollTimer = null;
 let loginShownStatus = null;
+let loginCancelling = false;
+
+function setActiveLogin(deviceId) {
+    try { localStorage.setItem(LOGIN_STORAGE_KEY, deviceId); } catch (e) { /* приватный режим */ }
+}
+
+function clearActiveLogin() {
+    try { localStorage.removeItem(LOGIN_STORAGE_KEY); } catch (e) { /* приватный режим */ }
+}
 
 function stopLoginPoll() {
     if (loginPollTimer) {
@@ -1217,12 +1244,100 @@ function scheduleLoginPoll(deviceId, delay = 2000) {
     loginPollTimer = setTimeout(() => tickLogin(deviceId), delay);
 }
 
-function renderLoginProgress(title, sub) {
+function renderLoginProgress(title, sub, options = {}) {
+    const { deviceId = null, cancel = true } = options;
+    const cancelBtn = (cancel && deviceId)
+        ? `<div class="sheet__actions"><button type="button" class="btn" data-action="cancel-login">Отменить вход</button></div>`
+        : '';
     openSheet(`
         <h3 class="sheet__title">${title}</h3>
         <p class="sheet__sub">${sub}</p>
         <div class="login-progress"><span class="login-progress__spinner">${LOAD_ICON}</span></div>
-    `);
+        ${cancelBtn}
+    `, {
+        full: true,
+        onClose: deviceId ? () => confirmCancelLogin(deviceId) : undefined,
+    });
+    if (cancel && deviceId) {
+        const btn = sheetContent.querySelector('[data-action="cancel-login"]');
+        if (btn) btn.addEventListener('click', () => confirmCancelLogin(deviceId));
+    }
+}
+
+function refreshLoginScreen(deviceId) {
+    const device = devices.find((item) => item.id === deviceId);
+    if (device && deviceScreen.classList.contains('screen--active')) {
+        deviceScreen.innerHTML = renderDeviceScreen(device);
+    }
+}
+
+async function resumeLoginIfNeeded() {
+    let deviceId = null;
+    try {
+        deviceId = localStorage.getItem(LOGIN_STORAGE_KEY);
+    } catch (e) {
+        return;
+    }
+    if (!deviceId) return;
+
+    let data;
+    try {
+        data = await api(`/devices/${encodeURIComponent(deviceId)}/login`);
+    } catch (error) {
+        return;
+    }
+    if (!data || !RESUMABLE_LOGIN_STATUSES.includes(data.status)) {
+        clearActiveLogin();
+        return;
+    }
+    if (!devices.find((item) => item.id === deviceId)) {
+        clearActiveLogin();
+        return;
+    }
+    openDevice(deviceId);
+    loginShownStatus = null;
+    loginCancelling = false;
+    handleLoginStatus(deviceId, data);
+}
+
+function confirmCancelLogin(deviceId) {
+    haptic.notify('warning');
+    stopLoginPoll();
+    openSheet(`
+        <h3 class="sheet__title">Отменить вход?</h3>
+        <p class="sheet__sub">Вход в личный кабинет ещё не завершён. Точно отменить? На устройстве вернёмся на экран входа.</p>
+        <div class="sheet__actions">
+            <button type="button" class="btn btn--danger" data-action="confirm-cancel">Да, отменить</button>
+            <button type="button" class="btn btn--primary" data-action="resume">Продолжить вход</button>
+        </div>
+    `, {
+        full: true,
+        onClose: () => resumeLoginPolling(deviceId),
+    });
+    sheetContent.querySelector('[data-action="confirm-cancel"]').addEventListener('click', () => cancelLoginConfirmed(deviceId));
+    sheetContent.querySelector('[data-action="resume"]').addEventListener('click', () => {
+        haptic.impact('light');
+        resumeLoginPolling(deviceId);
+    });
+}
+
+function resumeLoginPolling(deviceId) {
+    loginShownStatus = null;
+    tickLogin(deviceId);
+}
+
+async function cancelLoginConfirmed(deviceId) {
+    haptic.impact('medium');
+    loginCancelling = true;
+    loginShownStatus = 'cancelling';
+    clearActiveLogin();
+    renderLoginProgress('Отменяю вход…', 'Возвращаюсь на экран входа', { cancel: false });
+    try {
+        await api(`/devices/${encodeURIComponent(deviceId)}/login/cancel`, { method: 'POST' });
+    } catch (error) {
+        /* даже при ошибке продолжаем опрашивать статус сессии */
+    }
+    scheduleLoginPoll(deviceId, 1200);
 }
 
 async function checkLoginState(deviceId) {
@@ -1270,6 +1385,7 @@ function startLoginFlow(deviceId) {
     haptic.impact('medium');
     stopLoginPoll();
     loginShownStatus = null;
+    loginCancelling = false;
     openSheet(`
         <h3 class="sheet__title">Вход в личный кабинет</h3>
         <form class="form" id="loginForm" autocomplete="off">
@@ -1289,7 +1405,7 @@ function startLoginFlow(deviceId) {
                 <button type="button" class="btn" data-action="cancel">Отмена</button>
             </div>
         </form>
-    `);
+    `, { full: true });
     const form = document.getElementById('loginForm');
     form.addEventListener('submit', (event) => onLoginSubmit(event, deviceId));
     form.elements.number.addEventListener('input', () => formatPhoneInput(form.elements.number));
@@ -1314,16 +1430,19 @@ async function onLoginSubmit(event, deviceId) {
     }
 
     loginShownStatus = 'running';
-    renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа');
+    loginCancelling = false;
+    renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа', { deviceId });
     try {
         await api(`/devices/${encodeURIComponent(deviceId)}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ number, password }),
         });
+        setActiveLogin(deviceId);
         scheduleLoginPoll(deviceId, 1200);
     } catch (error) {
         haptic.notify('error');
+        clearActiveLogin();
         renderLoginError(deviceId, error.message || 'Не удалось начать вход');
     }
 }
@@ -1340,11 +1459,24 @@ async function tickLogin(deviceId) {
 }
 
 function handleLoginStatus(deviceId, data) {
+    const terminal = ['done', 'error', 'cancelled', 'idle'];
+
+    // Пока идёт отмена — держим экран «Отменяю…» и не даём промежуточным
+    // статусам (awaiting_code и т.п.) перерисовать экран.
+    if (loginCancelling && !terminal.includes(data.status)) {
+        if (loginShownStatus !== 'cancelling') {
+            loginShownStatus = 'cancelling';
+            renderLoginProgress('Отменяю вход…', 'Возвращаюсь на экран входа', { cancel: false });
+        }
+        scheduleLoginPoll(deviceId, 1500);
+        return;
+    }
+
     switch (data.status) {
         case 'running':
             if (loginShownStatus !== 'running') {
                 loginShownStatus = 'running';
-                renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа');
+                renderLoginProgress('Выполняю вход…', 'Ввожу номер, жму «Войти», закрываю запрос доступа', { deviceId });
             }
             scheduleLoginPoll(deviceId, 2000);
             break;
@@ -1361,19 +1493,47 @@ function handleLoginStatus(deviceId, data) {
         case 'verifying':
             if (loginShownStatus !== 'verifying') {
                 loginShownStatus = 'verifying';
-                renderLoginProgress('Проверяю код…', 'Ввожу код-пароль');
+                renderLoginProgress('Проверяю код…', 'Ввожу код-пароль', { deviceId });
             }
             scheduleLoginPoll(deviceId, 2000);
+            break;
+        case 'cancelling':
+            if (loginShownStatus !== 'cancelling') {
+                loginShownStatus = 'cancelling';
+                renderLoginProgress('Отменяю вход…', 'Возвращаюсь на экран входа', { cancel: false });
+            }
+            scheduleLoginPoll(deviceId, 1500);
             break;
         case 'done':
             stopLoginPoll();
             loginShownStatus = null;
+            loginCancelling = false;
+            clearActiveLogin();
             onLoginDone(deviceId, data.device);
+            break;
+        case 'cancelled':
+            stopLoginPoll();
+            loginShownStatus = null;
+            loginCancelling = false;
+            clearActiveLogin();
+            closeSheet();
+            haptic.notify('success');
+            showToast('Вход отменён');
+            refreshLoginScreen(deviceId);
             break;
         case 'error':
             stopLoginPoll();
             loginShownStatus = null;
+            loginCancelling = false;
+            clearActiveLogin();
             renderLoginError(deviceId, data.error);
+            break;
+        case 'idle':
+            stopLoginPoll();
+            loginShownStatus = null;
+            loginCancelling = false;
+            clearActiveLogin();
+            closeSheet();
             break;
         default:
             scheduleLoginPoll(deviceId, 2000);
@@ -1403,20 +1563,20 @@ function renderCodeForm(deviceId, info) {
             <div class="sheet__actions">
                 <button type="submit" class="btn btn--primary">Подтвердить</button>
                 <button type="button" class="btn btn--ghost" id="resendBtn" data-action="resend" disabled>Отправить код заново</button>
-                <button type="button" class="btn" data-action="cancel">Отмена</button>
+                <button type="button" class="btn" data-action="cancel">Отменить вход</button>
             </div>
         </form>
-    `);
+    `, {
+        full: true,
+        onClose: () => confirmCancelLogin(deviceId),
+    });
     const form = document.getElementById('codeForm');
     form.addEventListener('submit', (event) => onCodeSubmit(event, deviceId));
     form.elements.code.addEventListener('input', () => {
         form.elements.code.value = form.elements.code.value.replace(/\D/g, '').slice(0, 6);
     });
     document.getElementById('resendBtn').addEventListener('click', () => onResend(deviceId));
-    form.querySelector('[data-action="cancel"]').addEventListener('click', () => {
-        haptic.impact('light');
-        closeSheet();
-    });
+    form.querySelector('[data-action="cancel"]').addEventListener('click', () => confirmCancelLogin(deviceId));
     updateCodeForm(info);
     setTimeout(() => form.elements.code.focus(), 80);
 }
@@ -1472,7 +1632,7 @@ async function onCodeSubmit(event, deviceId) {
             body: JSON.stringify({ code }),
         });
         loginShownStatus = 'verifying';
-        renderLoginProgress('Проверяю код…', 'Ввожу код-пароль');
+        renderLoginProgress('Проверяю код…', 'Ввожу код-пароль', { deviceId });
         scheduleLoginPoll(deviceId, 1500);
     } catch (error) {
         haptic.notify('error');
@@ -1496,6 +1656,7 @@ function onLoginDone(deviceId, device) {
 
 function renderLoginError(deviceId, message) {
     haptic.notify('error');
+    clearActiveLogin();
     openSheet(`
         <h3 class="sheet__title">Не удалось войти</h3>
         <p class="sheet__sub">${message || 'Ошибка входа'}</p>
@@ -1503,7 +1664,7 @@ function renderLoginError(deviceId, message) {
             <button type="button" class="btn btn--primary" data-action="retry">Повторить</button>
             <button type="button" class="btn" data-action="cancel">Закрыть</button>
         </div>
-    `);
+    `, { full: true });
     sheetContent.querySelector('[data-action="retry"]').addEventListener('click', () => startLoginFlow(deviceId));
     sheetContent.querySelector('[data-action="cancel"]').addEventListener('click', () => {
         haptic.impact('light');
@@ -1519,6 +1680,8 @@ document.getElementById('settingsBtn').addEventListener('click', () => showToast
 /* ---------- Старт ---------- */
 
 initTelegram();
-loadDevices().catch((error) => {
-    deviceList.innerHTML = `<div class="empty">Не удалось загрузить девайсы.<br>${error.message}</div>`;
-});
+loadDevices()
+    .then(() => resumeLoginIfNeeded())
+    .catch((error) => {
+        deviceList.innerHTML = `<div class="empty">Не удалось загрузить девайсы.<br>${error.message}</div>`;
+    });

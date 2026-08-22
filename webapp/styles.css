@@ -1185,6 +1185,31 @@ body {
     transform: none;
 }
 
+.sheet--full {
+    top: 0;
+    max-width: none;
+    max-height: none;
+    height: 100%;
+    height: var(--app-h, 100dvh);
+    border-radius: 0;
+    border-top: none;
+    padding-top: calc(16px + var(--safe-top));
+    display: flex;
+    flex-direction: column;
+}
+
+.sheet--full .sheet__grabber {
+    display: none;
+}
+
+.sheet--full .form {
+    flex: 1;
+}
+
+.sheet--full .sheet__actions {
+    margin-top: auto;
+}
+
 .sheet__grabber {
     width: 42px;
     height: 4px;
